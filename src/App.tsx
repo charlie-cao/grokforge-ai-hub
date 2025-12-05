@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ChatMessage } from "./components/ChatMessage";
+import { AnalysisCanvas } from "./components/AnalysisCanvas";
 import { modelManager, LEADS_BOT_SYSTEM_PROMPT, DECISION_BOT_SYSTEM_PROMPT } from "./lib/models";
 import { generatePromptFromPain } from "./lib/utils";
 import { cleanCode } from "./components/CodeEditor";
@@ -13,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Wand2, Plus, History } from "lucide-react";
+import { Wand2, Plus, History, Sparkles } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -60,6 +61,8 @@ export function App() {
   const [painPoint, setPainPoint] = useState("");
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
+  const [analysisSteps, setAnalysisSteps] = useState<Array<{step: number; desc: string; tool?: string}>>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -118,8 +121,43 @@ export function App() {
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setIsLoading(true);
+    setIsAnalyzing(true);
+    setAnalysisSteps([]);
 
     try {
+      // 第一步：动态分析痛点（流式展示）
+      const analysisPrompt = `Analyze the user's pain point: "${input.trim()}". Break it down into 3-5 tools/solutions. Output JSON format: {"steps": [{"step": 1, "desc": "分析获客痛点", "tool": "LeadsBot"}, {"step": 2, "desc": "需要CRM管理", "tool": "CRM"}], "tools": [{"name": "LeadsBot", "type": "bot", "priority": 1}]}. Output ONLY valid JSON, no markdown.`;
+      
+      try {
+        const analysisResponse = await modelManager.query(analysisPrompt);
+        
+        // 尝试解析 JSON
+        const jsonMatch = analysisResponse.content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const analysisData = JSON.parse(jsonMatch[0]);
+          if (analysisData.steps && Array.isArray(analysisData.steps)) {
+            // 逐个添加步骤（流式效果）
+            analysisData.steps.forEach((step: any, index: number) => {
+              setTimeout(() => {
+                setAnalysisSteps(prev => [...prev, step]);
+              }, index * 500);
+            });
+          }
+        }
+      } catch (parseError) {
+        // 如果解析失败，创建默认步骤
+        const defaultSteps = [
+          { step: 1, desc: "分析用户痛点", tool: "Analysis" },
+          { step: 2, desc: "识别所需工具", tool: "Tools" },
+          { step: 3, desc: "生成解决方案", tool: "Solution" }
+        ];
+        defaultSteps.forEach((step, index) => {
+          setTimeout(() => {
+            setAnalysisSteps(prev => [...prev, step]);
+          }, index * 500);
+        });
+      }
+
       // Detect query type and set appropriate system prompt
       let systemPrompt: string | undefined;
       if (isLeadsQuery(input)) {
@@ -187,6 +225,7 @@ export function App() {
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      setIsAnalyzing(false);
     }
   }, [input, isLoading, isLeadsQuery, isDecisionQuery, isLeadsBot, isDecisionBot]);
 
@@ -242,6 +281,24 @@ export function App() {
           <div className="flex items-center gap-4">
             <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">GrokForge AI</h1>
             <Button
+              onClick={() => window.location.href = '/demo1'}
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              Demo 1
+            </Button>
+            <Button
+              onClick={() => window.location.href = '/demo2'}
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              Demo 2
+            </Button>
+            <Button
               onClick={handleNewChat}
               variant="ghost"
               size="sm"
@@ -265,11 +322,53 @@ export function App() {
         </div>
       </div>
 
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900">
-          <div className="max-w-4xl mx-auto">
+      {/* Main Content Area - Three Column Layout */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left: Analysis Steps */}
+        <div className="w-64 border-r border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 overflow-y-auto">
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">分析步骤</h2>
+          <div className="space-y-3">
+            {analysisSteps.map((step, index) => (
+              <div
+                key={index}
+                className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+              >
+                <div className="flex items-start gap-2">
+                  <div className="w-6 h-6 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center flex-shrink-0">
+                    {step.step}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-sm text-slate-900 dark:text-slate-100">{step.desc}</div>
+                    {step.tool && (
+                      <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">{step.tool}</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            {isAnalyzing && analysisSteps.length === 0 && (
+              <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                  <div className="text-sm text-slate-500 dark:text-slate-400">分析中...</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Center: Tldraw Canvas + Chat */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Tldraw Canvas */}
+          {isAnalyzing && (
+            <div className="h-64 border-b border-slate-200 dark:border-slate-700">
+              <AnalysisCanvas analysisSteps={analysisSteps} isAnalyzing={isAnalyzing} />
+            </div>
+          )}
+
+          {/* Messages Container */}
+          <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900">
+            <div className="max-w-4xl mx-auto">
             {messages.length === 0 && (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -307,10 +406,10 @@ export function App() {
             )}
 
             <div ref={messagesEndRef} />
+            </div>
           </div>
-        </div>
 
-        {/* Input Area */}
+          {/* Input Area */}
         <div className="border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-md">
           <form
             onSubmit={(e) => {
@@ -400,6 +499,19 @@ export function App() {
               {isLoading ? "发送中..." : "发送"}
             </Button>
           </form>
+          </div>
+        </div>
+
+        {/* Right: Tool Cards (Placeholder for now) */}
+        <div className="w-80 border-l border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 overflow-y-auto">
+          <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-4">生成的工具</h2>
+          <div className="space-y-3">
+            <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+              <div className="text-sm text-slate-500 dark:text-slate-400">
+                分析完成后，工具卡片将在这里显示
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
