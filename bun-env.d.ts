@@ -15,3 +15,9 @@ declare module "*.module.css" {
   const classes: { readonly [key: string]: string };
   export = classes;
 }
+
+declare global {
+  interface Window {
+    loadPyodide?: (config: { indexURL: string }) => Promise<any>;
+  }
+}

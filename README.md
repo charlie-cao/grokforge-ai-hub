@@ -17,6 +17,34 @@ An AI-powered business assistant MVP built with Bun + React + Shadcn UI, integra
 
 ---
 
+## 🎉 Day 5 MVP Final: Neutral UI + Real Leads + Decision Bot / Day 5 最终MVP：中性UI + 实飞Leads + 决策Bot
+
+- **Neutral Minimalist UI** / **中性简约界面**
+  - Switched from neon to slate/blue palette
+  - 从霓虹风格切换为 slate/blue 配色
+  - Flat buttons with subtle shadows
+  - 扁平按钮，轻微阴影
+  - Inter sans-serif font
+  - Inter 无衬线字体
+
+- **LeadsBot Real Execution** / **LeadsBot 实际运行**
+  - Python code execution with Pyodide
+  - 使用 Pyodide 执行 Python 代码
+  - CSV generation detection and validation
+  - CSV 生成检测和验证
+  - Mock/real Apollo API support
+  - 支持模拟/真实 Apollo API
+
+- **Decision Bot POC** / **决策Bot 概念验证**
+  - Virtual board agent with multi-perspective advice
+  - 多视角建议的虚拟决策板
+  - CEO/COO/Investor perspectives
+  - CEO/COO/投资者视角
+  - Decision log simulation
+  - 决策日志模拟
+
+---
+
 ## 🎉 Day 4 Updates: Export & Leads Generation / Day 4 更新：导出和线索生成
 
 - **One-click .py download (markdown-free)** / **一键下载 .py 文件（无 Markdown）**
@@ -263,6 +291,12 @@ bun install
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 欢迎贡献！请随时提交 Pull Request。
+
+**Fork/Star for free bots!** 🚀
+
+Fork this repo to get your own AI hub, or star it to support the project!
+
+Fork 此仓库以获取您自己的 AI 中心，或 Star 以支持项目！
 
 ---
 
