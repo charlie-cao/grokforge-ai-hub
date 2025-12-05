@@ -17,6 +17,26 @@ An AI-powered business assistant MVP built with Bun + React + Shadcn UI, integra
 
 ---
 
+## 🎉 Day 4 Updates: Export & Leads Generation / Day 4 更新：导出和线索生成
+
+- **One-click .py download (markdown-free)** / **一键下载 .py 文件（无 Markdown）**
+  - Automatically strips markdown code fences from exported code
+  - 自动去除导出代码中的 Markdown 代码块标记
+
+- **Apollo-integrated LeadsBot for marketing automation** / **集成 Apollo 的 LeadsBot 营销自动化**
+  - Specialized system prompt for lead generation queries
+  - 针对线索生成查询的专用系统提示
+  - Detects "leads" keyword in input to activate LeadsBot mode
+  - 检测输入中的 "leads" 关键词以激活 LeadsBot 模式
+
+- **Mock CSV simulation in dashboard** / **仪表板中的模拟 CSV**
+  - Visual table display of generated leads (name, email, company)
+  - 生成线索的可视化表格显示（姓名、邮箱、公司）
+  - Simulates LeadsBot execution with sample data
+  - 使用示例数据模拟 LeadsBot 执行
+
+---
+
 ## ✨ Features / 功能特性
 
 ### 🌟 Core Features / 核心功能

@@ -2,8 +2,16 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { APITester } from "./APITester";
-import { queryQwen3 } from "./lib/utils";
+import { queryQwen3, LEADS_BOT_SYSTEM_PROMPT } from "./lib/utils";
 import "./index.css";
 
 import logo from "./logo.svg";
@@ -12,22 +20,46 @@ import reactLogo from "./react.svg";
 // Extract repeated button styles for consistency and maintainability
 const NEON_BUTTON_CLASSES = "w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 dark:from-purple-600 dark:to-pink-600 dark:hover:from-purple-500 dark:hover:to-pink-500 text-white font-semibold shadow-lg shadow-[0_0_15px_rgba(139,92,246,0.4)] dark:shadow-[0_0_15px_rgba(139,92,246,0.6)] hover:shadow-[0_0_25px_rgba(139,92,246,0.6)] dark:hover:shadow-[0_0_25px_rgba(139,92,246,0.8)] transition-all duration-300";
 
+// Mock leads data for simulation
+const MOCK_LEADS = [
+  { name: "Alice AI", email: "alice@neon.com", company: "NeonAI" },
+  { name: "Bob Builder", email: "bob@startup.io", company: "StartupIO" },
+  { name: "Charlie Code", email: "charlie@tech.co", company: "TechCo" },
+];
+
+interface Lead {
+  name: string;
+  email: string;
+  company: string;
+}
+
 export function App() {
   const [input, setInput] = useState("");
   const [response, setResponse] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    // Load dark mode preference from localStorage
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("darkMode");
+      return saved === "true";
+    }
+    return false;
+  });
   const [isDeployed, setIsDeployed] = useState(false);
   const [agentCode, setAgentCode] = useState("");
   const [isDeploying, setIsDeploying] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulatedLeads, setSimulatedLeads] = useState<Lead[]>([]);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Toggle dark mode by adding/removing 'dark' class on html element
+  // Toggle dark mode by adding/removing 'dark' class on html element and persist to localStorage
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add("dark");
+      localStorage.setItem("darkMode", "true");
     } else {
       document.documentElement.classList.remove("dark");
+      localStorage.setItem("darkMode", "false");
     }
   }, [isDark]);
 
@@ -40,6 +72,16 @@ export function App() {
     };
   }, []);
 
+  // Detect if input contains 'leads' keyword
+  const isLeadsQuery = useCallback((text: string) => {
+    return text.toLowerCase().includes("leads");
+  }, []);
+
+  // Check if agent code is for LeadsBot
+  const isLeadsBot = useCallback((code: string) => {
+    return code.toLowerCase().includes("apollo") || code.toLowerCase().includes("leads");
+  }, []);
+
   const handleQuery = useCallback(async () => {
     if (!input.trim()) return;
     
@@ -47,6 +89,7 @@ export function App() {
     setResponse("");
     setIsDeployed(false);
     setAgentCode("");
+    setSimulatedLeads([]);
     
     // Clear any existing toast timeout
     if (toastTimeoutRef.current) {
@@ -55,20 +98,23 @@ export function App() {
     }
     
     try {
-      const result = await queryQwen3(input);
+      // Detect if this is a leads query and set system prompt accordingly
+      const systemPrompt = isLeadsQuery(input) ? LEADS_BOT_SYSTEM_PROMPT : undefined;
+      const result = await queryQwen3(input, systemPrompt);
       setResponse(result);
     } catch (error) {
       setResponse(`Error: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsLoading(false);
     }
-  }, [input]);
+  }, [input, isLeadsQuery]);
 
   const handleDeploy = useCallback(async () => {
     if (!response.trim()) return;
     
     setIsDeploying(true);
     setAgentCode("");
+    setSimulatedLeads([]);
     
     // Clear any existing toast timeout
     if (toastTimeoutRef.current) {
@@ -81,10 +127,13 @@ export function App() {
         ? `${response.substring(0, 200)}...` 
         : response;
       
+      // Detect if this is a leads query for system prompt
+      const systemPrompt = isLeadsQuery(input) ? LEADS_BOT_SYSTEM_PROMPT : undefined;
+      
       // Generate agent script using Qwen3
       const prompt = `Generate Python code for "${responseSummary}" as a Zapier-like automation bot. The code should be a complete, runnable Python script that implements the business advice as an automated agent. Include proper error handling and logging. Format as clean Python code with comments.`;
       
-      const generatedCode = await queryQwen3(prompt);
+      const generatedCode = await queryQwen3(prompt, systemPrompt);
       setAgentCode(generatedCode);
       setIsDeployed(true);
       
@@ -93,19 +142,62 @@ export function App() {
         setIsDeployed(false);
         toastTimeoutRef.current = null;
       }, 4000);
+
+      // Simulate LeadsBot run if it's a leads bot
+      if (isLeadsBot(generatedCode)) {
+        setIsSimulating(true);
+        // Simulate API call delay
+        setTimeout(() => {
+          setSimulatedLeads(MOCK_LEADS);
+          setIsSimulating(false);
+          console.log("LeadsBot simulation complete. CSV would be saved to: leads.csv");
+        }, 1500);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       setAgentCode(`# Error generating agent code\n# ${errorMessage}`);
     } finally {
       setIsDeploying(false);
     }
-  }, [response]);
+  }, [response, input, isLeadsQuery, isLeadsBot]);
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     if (!agentCode.trim()) return;
     
+    // Strip markdown code fences from agentCode before exporting
+    let cleanCode = agentCode
+      .replace(/```python:disable-run\n?/g, "")
+      .replace(/```python\n?/g, "")
+      .replace(/```\n?/g, "")
+      .trim();
+    
+    try {
+      // Try to use Bun's fs.writeFileSync if available (server-side/Bun runtime)
+      // Note: This will only work in Bun runtime environment, not in browser
+      if (typeof Bun !== 'undefined') {
+        try {
+          // Try using fs module (Node.js compatible)
+          const fs = await import('fs');
+          if (fs && typeof fs.writeFileSync === 'function') {
+            fs.writeFileSync('bot.py', cleanCode);
+            console.log('File saved using fs.writeFileSync');
+            return;
+          }
+        } catch (fsError) {
+          // fs module not available, try Bun.write
+          if (typeof Bun.write === 'function') {
+            await Bun.write('bot.py', cleanCode);
+            console.log('File saved using Bun.write');
+            return;
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Server-side file write not available, using browser download');
+    }
+    
     // Browser download using data URI (works in all browsers)
-    const dataUri = `data:text/plain;charset=utf-8,${encodeURIComponent(agentCode)}`;
+    const dataUri = `data:text/plain;charset=utf-8,${encodeURIComponent(cleanCode)}`;
     const link = document.createElement('a');
     link.href = dataUri;
     link.download = 'bot.py';
@@ -164,7 +256,7 @@ export function App() {
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask for solo business advice, e.g., 'Fix time trap'"
+            placeholder="Ask for solo business advice, e.g., 'Fix time trap' or 'generate marketing leads: AI solo founder in SF'"
             className="min-h-[100px] resize-y border-2 focus:border-purple-500 dark:focus:border-purple-400 transition-colors duration-300"
           />
           <Button 
@@ -196,13 +288,13 @@ export function App() {
               {/* Deploy Agent Button */}
               <Button
                 onClick={handleDeploy}
-                disabled={isDeploying}
+                disabled={isDeploying || isSimulating}
                 className={`mt-4 ${NEON_BUTTON_CLASSES} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                {isDeploying ? (
+                {isDeploying || isSimulating ? (
                   <>
                     <span className="animate-spin-emoji mr-2">🌀</span>
-                    Generating Agent...
+                    {isDeploying ? "Generating Agent..." : "Simulating LeadsBot..."}
                   </>
                 ) : (
                   "🚀 Deploy Agent"
@@ -230,6 +322,40 @@ export function App() {
                     >
                       💾 Download Bot.py - Export your empire code!
                     </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Simulated Leads Table for LeadsBot */}
+              {simulatedLeads.length > 0 && (
+                <Card className="mt-4 border-2 border-purple-300/50 dark:border-purple-500/50 bg-gradient-to-br from-purple-50/50 to-pink-50/50 dark:from-purple-900/20 dark:to-pink-900/20 shadow-lg shadow-[0_0_15px_rgba(139,92,246,0.2)] dark:shadow-[0_0_15px_rgba(139,92,246,0.4)] transition-all duration-300">
+                  <CardHeader>
+                    <CardTitle className="text-lg sm:text-xl bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
+                      📊 Simulated Leads - LeadsBot Output
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-purple-600 dark:text-purple-400">Name</TableHead>
+                          <TableHead className="text-purple-600 dark:text-purple-400">Email</TableHead>
+                          <TableHead className="text-purple-600 dark:text-purple-400">Company</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {simulatedLeads.map((lead, index) => (
+                          <TableRow key={index}>
+                            <TableCell className="font-medium">{lead.name}</TableCell>
+                            <TableCell>{lead.email}</TableCell>
+                            <TableCell>{lead.company}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    <p className="text-sm text-muted-foreground mt-4 text-left">
+                      💡 On real deploy, CSV would be saved to: <code className="bg-muted px-1 rounded">leads.csv</code>
+                    </p>
                   </CardContent>
                 </Card>
               )}
