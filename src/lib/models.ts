@@ -69,6 +69,80 @@ export class OllamaProvider implements ModelProvider {
       model: config.model,
     };
   }
+
+  /**
+   * Stream query - returns an async generator for streaming responses
+   */
+  async *queryStream(
+    prompt: string,
+    config: ModelConfig,
+    onChunk?: (chunk: string) => void
+  ): AsyncGenerator<string, void, unknown> {
+    if (!prompt.trim()) {
+      throw new Error("Prompt cannot be empty");
+    }
+
+    const apiUrl = config.apiUrl || "http://localhost:11434/api/generate";
+    const fullPrompt = config.systemPrompt
+      ? `${config.systemPrompt}\n\n${prompt.trim()}`
+      : prompt.trim();
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: config.model,
+        prompt: fullPrompt,
+        stream: true,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => response.statusText);
+      throw new Error(`Ollama API error: ${response.status} ${errorText}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error("Response body is not readable");
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const json = JSON.parse(line);
+              const chunk = json.response || "";
+              if (chunk) {
+                yield chunk;
+                onChunk?.(chunk);
+              }
+              if (json.done) {
+                return;
+              }
+            } catch (e) {
+              // Skip invalid JSON lines
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock();
+    }
+  }
 }
 
 /**
@@ -103,6 +177,25 @@ export class ModelManager {
     const finalConfig = { ...this.defaultConfig, ...config };
     const provider = this.getProvider(finalConfig.provider);
     return provider.query(prompt, finalConfig);
+  }
+
+  /**
+   * Stream query - for streaming responses
+   */
+  async *queryStream(
+    prompt: string,
+    config?: Partial<ModelConfig>,
+    onChunk?: (chunk: string) => void
+  ): AsyncGenerator<string, void, unknown> {
+    const finalConfig = { ...this.defaultConfig, ...config };
+    const provider = this.getProvider(finalConfig.provider);
+    if (provider instanceof OllamaProvider) {
+      yield* provider.queryStream(prompt, finalConfig, onChunk);
+    } else {
+      // Fallback to non-streaming for other providers
+      const response = await provider.query(prompt, finalConfig);
+      yield response.content;
+    }
   }
 }
 
