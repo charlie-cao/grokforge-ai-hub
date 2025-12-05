@@ -17,6 +17,32 @@ An AI-powered business assistant MVP built with Bun + React + Shadcn UI, integra
 
 ---
 
+## 🎉 UI Updates: Cleaner Chat for Pros / UI更新：专业聊天界面
+
+- **No Sidebar, Full-Screen Focus** / **无侧边栏，全屏专注**
+  - Removed sidebar for cleaner interface
+  - 移除侧边栏，界面更简洁
+  - Top navigation with New Chat + History dropdown
+  - 顶部导航栏：新对话 + 历史记录下拉菜单
+
+- **Professional Chat Bubbles** / **专业聊天气泡**
+  - AI messages: Blue bubbles on left with Brain icon
+  - AI消息：左侧蓝色气泡，带Brain图标
+  - User messages: Gray bubbles on right
+  - 用户消息：右侧灰色气泡
+  - Timestamps and subtle borders
+  - 时间戳和轻微边框
+
+- **AI Prompt Helper** / **AI提示词助手**
+  - Wand2 button next to input
+  - 输入框旁的Wand2按钮
+  - Modal dialog to generate optimized prompts
+  - 模态对话框生成优化提示词
+  - Auto-insert to input field
+  - 自动插入到输入框
+
+---
+
 ## 🎉 Day 5 MVP Final: Neutral UI + Real Leads + Decision Bot / Day 5 最终MVP：中性UI + 实飞Leads + 决策Bot
 
 - **Neutral Minimalist UI** / **中性简约界面**

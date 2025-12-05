@@ -1,10 +1,26 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Sidebar } from "./components/Sidebar";
 import { ChatMessage } from "./components/ChatMessage";
 import { modelManager, LEADS_BOT_SYSTEM_PROMPT, DECISION_BOT_SYSTEM_PROMPT } from "./lib/models";
+import { generatePromptFromPain } from "./lib/utils";
 import { cleanCode } from "./components/CodeEditor";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Wand2, Plus, History } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import "./index.css";
 
 interface Message {
@@ -40,6 +56,10 @@ export function App() {
     }
     return true; // Default to dark mode
   });
+  const [promptHelperOpen, setPromptHelperOpen] = useState(false);
+  const [painPoint, setPainPoint] = useState("");
+  const [generatedPrompt, setGeneratedPrompt] = useState("");
+  const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -187,61 +207,111 @@ export function App() {
     setInput("");
   }, []);
 
-  const handleSearch = useCallback((query: string) => {
-    // TODO: Implement search
-    console.log("Search:", query);
-  }, []);
+  const handleGeneratePrompt = useCallback(async () => {
+    if (!painPoint.trim()) return;
+    
+    setIsGeneratingPrompt(true);
+    try {
+      const prompt = await generatePromptFromPain(painPoint.trim());
+      setGeneratedPrompt(prompt);
+      
+      // Copy to clipboard
+      await navigator.clipboard.writeText(prompt);
+    } catch (error) {
+      console.error("Prompt generation error:", error);
+      setGeneratedPrompt("Error generating prompt. Please try again.");
+    } finally {
+      setIsGeneratingPrompt(false);
+    }
+  }, [painPoint]);
+
+  const handleInsertPrompt = useCallback(() => {
+    if (generatedPrompt) {
+      setInput(generatedPrompt);
+      setPromptHelperOpen(false);
+      setPainPoint("");
+      setGeneratedPrompt("");
+    }
+  }, [generatedPrompt]);
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
-      {/* Sidebar */}
-      <Sidebar onNewChat={handleNewChat} onSearch={handleSearch} />
+    <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+      {/* Top Navigation Bar */}
+      <div className="border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-4">
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
+          <div className="flex items-center gap-4">
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">GrokForge AI</h1>
+            <Button
+              onClick={handleNewChat}
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              New Chat
+            </Button>
+            <Select defaultValue="today">
+              <SelectTrigger className="w-32">
+                <SelectValue placeholder="History" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="yesterday">Yesterday</SelectItem>
+                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {messages.length === 0 && (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-center">
-                <div className="text-4xl font-bold mb-4 text-slate-900 dark:text-slate-100">
-                  GrokForge AI
-                </div>
-                <div className="text-slate-500 dark:text-slate-400">
-                  Ask me anything about solo business advice
-                </div>
-              </div>
-            </div>
-          )}
-
-          {messages.map((message) => (
-            <ChatMessage
-              key={message.id}
-              message={message}
-              onDownload={handleDownload}
-            />
-          ))}
-
-          {isLoading && (
-            <div className="flex gap-4 mb-6">
-              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm">
-                G
-              </div>
-              <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-4">
-                <div className="flex gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Messages Container */}
+        <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-900">
+          <div className="max-w-4xl mx-auto">
+            {messages.length === 0 && (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="text-4xl font-bold mb-4 text-slate-900 dark:text-slate-100">
+                    GrokForge AI
+                  </div>
+                  <div className="text-slate-500 dark:text-slate-400">
+                    输入痛点，如"找客户"或"决策困难"，AI将为您生成解决方案
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          <div ref={messagesEndRef} />
+            {messages.map((message) => (
+              <ChatMessage
+                key={message.id}
+                message={message}
+                onDownload={handleDownload}
+              />
+            ))}
+
+            {isLoading && (
+              <div className="flex gap-3 mb-4">
+                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0">
+                  <span className="text-sm">G</span>
+                </div>
+                <div className="bg-blue-500 text-white rounded-2xl px-4 py-3 shadow-md">
+                  <div className="flex gap-2">
+                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
+                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
+                    <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
         {/* Input Area */}
-        <div className="border-t border-slate-200 dark:border-slate-700 p-4">
+        <div className="border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-md">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -249,6 +319,66 @@ export function App() {
             }}
             className="flex gap-2 max-w-4xl mx-auto"
           >
+            <Dialog open={promptHelperOpen} onOpenChange={setPromptHelperOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="flex-shrink-0"
+                  title="AI帮生成提示"
+                >
+                  <Wand2 className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>AI Prompt Helper</DialogTitle>
+                  <DialogDescription>
+                    输入您的痛点描述，AI将为您生成优化的提示词
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <Textarea
+                    placeholder="例如：找客户"
+                    value={painPoint}
+                    onChange={(e) => setPainPoint(e.target.value)}
+                    className="min-h-20"
+                  />
+                  <Button
+                    onClick={handleGeneratePrompt}
+                    disabled={!painPoint.trim() || isGeneratingPrompt}
+                    className="w-full"
+                  >
+                    {isGeneratingPrompt ? "生成中..." : "生成提示词"}
+                  </Button>
+                  {generatedPrompt && (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={generatedPrompt}
+                        readOnly
+                        className="min-h-20 bg-slate-50 dark:bg-slate-900"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleInsertPrompt}
+                          className="flex-1"
+                        >
+                          插入到输入框
+                        </Button>
+                        <Button
+                          onClick={() => navigator.clipboard.writeText(generatedPrompt)}
+                          variant="outline"
+                        >
+                          复制
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </DialogContent>
+            </Dialog>
+
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -258,7 +388,7 @@ export function App() {
                   handleSend();
                 }
               }}
-              placeholder="Ask anything..."
+              placeholder="输入痛点，如'找客户'、'决策困难'..."
               className="flex-1 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 resize-none"
               rows={1}
             />
@@ -267,7 +397,7 @@ export function App() {
               disabled={!input.trim() || isLoading}
               className="bg-blue-500 hover:bg-blue-600 text-white px-6 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-md"
             >
-              {isLoading ? "Sending..." : "Send"}
+              {isLoading ? "发送中..." : "发送"}
             </Button>
           </form>
         </div>

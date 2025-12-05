@@ -8,6 +8,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Brain } from "lucide-react";
 
 interface Message {
   id: string;
@@ -36,29 +37,39 @@ export function ChatMessage({ message, onDownload }: ChatMessageProps) {
   const hasLeads = message.leads && message.leads.length > 0;
   const hasDecision = message.decisionPerspectives !== undefined;
 
+  const formatTime = (date: Date) => {
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  };
+
   return (
-    <div className={`flex gap-4 ${isUser ? "justify-end" : "justify-start"} mb-6`}>
+    <div className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"} mb-4`}>
       {!isUser && (
-        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-          G
+        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0">
+          <Brain className="w-4 h-4" />
         </div>
       )}
       
-      <div className={`flex-1 max-w-3xl ${isUser ? "order-2" : ""}`}>
+      <div className={`flex flex-col gap-1 max-w-3xl ${isUser ? "items-end" : "items-start"}`}>
         <div
-          className={`rounded-lg p-4 border border-slate-200 dark:border-slate-700 shadow-md ${
+          className={`rounded-2xl px-4 py-3 shadow-md ${
             isUser
-              ? "bg-blue-500 text-white ml-auto"
-              : "bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100"
+              ? "bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+              : "bg-blue-500 text-white"
           }`}
         >
-          <div className="prose prose-invert max-w-none">
-            <div className="whitespace-pre-wrap">{message.content}</div>
-          </div>
+          <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
+        </div>
+        <div className={`text-xs text-slate-500 dark:text-slate-400 px-1 ${isUser ? "text-right" : "text-left"}`}>
+          {formatTime(message.timestamp)}
+        </div>
 
-          {/* Generated Code */}
-          {hasCode && (
-            <div className="mt-4">
+        {/* Generated Code */}
+        {hasCode && (
+          <div className="mt-2 w-full">
+            <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700 shadow-md">
               <div className="mb-2 text-sm font-semibold text-blue-600 dark:text-blue-400">
                 ✨ Generated Agent Code
               </div>
@@ -79,15 +90,17 @@ export function ChatMessage({ message, onDownload }: ChatMessageProps) {
                 </div>
               )}
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Leads Table */}
-          {hasLeads && (
-            <div className="mt-4">
+        {/* Leads Table */}
+        {hasLeads && (
+          <div className="mt-2 w-full">
+            <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700 shadow-md">
               <div className="mb-2 text-sm font-semibold text-blue-600 dark:text-blue-400">
                 📊 Simulated Leads
               </div>
-              <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+              <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -108,15 +121,17 @@ export function ChatMessage({ message, onDownload }: ChatMessageProps) {
                 </Table>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* Decision Perspectives */}
-          {hasDecision && message.decisionPerspectives && (
-            <div className="mt-4">
+        {/* Decision Perspectives */}
+        {hasDecision && message.decisionPerspectives && (
+          <div className="mt-2 w-full">
+            <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700 shadow-md">
               <div className="mb-2 text-sm font-semibold text-blue-600 dark:text-blue-400">
                 🎯 Decision Perspectives - Virtual Board
               </div>
-              <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-4 space-y-3">
                 <div>
                   <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">CEO Perspective:</div>
                   <div className="text-sm text-slate-700 dark:text-slate-300">{message.decisionPerspectives.ceo}</div>
@@ -142,12 +157,12 @@ export function ChatMessage({ message, onDownload }: ChatMessageProps) {
                 💡 On real deploy, decision log would be saved to: <code className="bg-slate-100 dark:bg-slate-800 px-1 rounded">decision_log.txt</code>
               </p>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {isUser && (
-        <div className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+        <div className="w-8 h-8 rounded-full bg-slate-400 dark:bg-slate-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
           U
         </div>
       )}
