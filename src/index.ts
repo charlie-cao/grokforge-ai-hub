@@ -8,6 +8,7 @@ import demo5 from "./demo5.html";
 import demo6 from "./demo6.html";
 import demo7 from "./demo7.html";
 import demo8 from "./demo8.html";
+import demo9 from "./demo9.html";
 
 const server = serve({
   routes: {
@@ -20,6 +21,7 @@ const server = serve({
     "/demo6": demo6,
     "/demo7": demo7,
     "/demo8": demo8,
+    "/demo9": demo9,
     // Serve index.html for all unmatched routes.
     "/*": index,
 
@@ -82,6 +84,48 @@ const server = serve({
       GET: async (req) => {
         const { getChatById } = await import("./server/demo7-api");
         return getChatById(req, req.params.id);
+      },
+    },
+
+    // Demo9 API routes - File Processing System
+    "/api/demo9/upload": {
+      POST: async (req) => {
+        const { uploadFile } = await import("./server/demo9-api");
+        return uploadFile(req);
+      },
+    },
+    "/api/demo9/files": {
+      GET: async (req) => {
+        const { listFiles } = await import("./server/demo9-api");
+        return listFiles(req);
+      },
+    },
+    "/api/demo9/files/:filename": {
+      GET: async (req) => {
+        const { downloadFile } = await import("./server/demo9-api");
+        return downloadFile(req, req.params.filename);
+      },
+      DELETE: async (req) => {
+        const { deleteFile } = await import("./server/demo9-api");
+        return deleteFile(req, req.params.filename);
+      },
+    },
+    "/api/demo9/process/image": {
+      POST: async (req) => {
+        const { processImage } = await import("./server/demo9-api");
+        return processImage(req);
+      },
+    },
+    "/api/demo9/processed/:filename": {
+      GET: async (req) => {
+        const { getProcessedFile } = await import("./server/demo9-api");
+        return getProcessedFile(req, req.params.filename);
+      },
+    },
+    "/api/demo9/generate/pdf": {
+      POST: async (req) => {
+        const { generatePDF } = await import("./server/demo9-api");
+        return generatePDF(req);
       },
     },
   },

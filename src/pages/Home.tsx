@@ -19,6 +19,7 @@ import {
   MessageSquare,
   Clock,
   Brain,
+  Folder,
 } from "lucide-react";
 import "../index.css";
 
@@ -38,6 +39,7 @@ const demos: DemoInfo[] = [
   { id: 6, path: "/demo6", icon: Zap, featured: true },
   { id: 7, path: "/demo7", icon: Clock },
   { id: 8, path: "/demo8", icon: Brain },
+  { id: 9, path: "/demo9", icon: Folder },
 ];
 
 export function Home() {
@@ -71,6 +73,7 @@ export function Home() {
       6: { title: t.demo6Title, desc: t.demo6Desc, tech: t.demo6Tech, featured: true },
       7: { title: t.demo7Title, desc: t.demo7Desc, tech: t.demo7Tech },
       8: { title: t.demo8Title, desc: t.demo8Desc, tech: t.demo8Tech },
+      9: { title: t.demo9Title, desc: t.demo9Desc, tech: t.demo9Tech },
     };
     return infoMap[id] || { title: "", desc: "", tech: "" };
   };

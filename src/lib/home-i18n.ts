@@ -43,6 +43,10 @@ export interface HomeTranslations {
   demo8Desc: string;
   demo8Tech: string;
   
+  demo9Title: string;
+  demo9Desc: string;
+  demo9Tech: string;
+  
   // Common
   viewDemo: string;
   techStack: string;
@@ -89,6 +93,10 @@ const translations: Record<Language, HomeTranslations> = {
     demo8Desc: "智能 AI 对话系统，支持痛点分析和代码生成，包含可视化分析画布",
     demo8Tech: "React, Ollama, tldraw, AI Agents",
     
+    demo9Title: "Demo 9: 文件处理系统",
+    demo9Desc: "完整的文件处理解决方案，包括文件上传/下载、图片处理和 PDF 生成",
+    demo9Tech: "Bun.file(), File API, Image Processing, PDF Generation",
+    
     viewDemo: "查看演示",
     techStack: "技术栈",
     status: "状态",
@@ -131,6 +139,10 @@ const translations: Record<Language, HomeTranslations> = {
     demo8Title: "Demo 8: AI Smart Chat Assistant",
     demo8Desc: "Intelligent AI chat system supporting pain point analysis and code generation, with visual analysis canvas",
     demo8Tech: "React, Ollama, tldraw, AI Agents",
+    
+    demo9Title: "Demo 9: File Processing System",
+    demo9Desc: "Complete file processing solution including file upload/download, image processing, and PDF generation",
+    demo9Tech: "Bun.file(), File API, Image Processing, PDF Generation",
     
     viewDemo: "View Demo",
     techStack: "Tech Stack",
