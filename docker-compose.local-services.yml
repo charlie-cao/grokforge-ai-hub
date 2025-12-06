@@ -1,0 +1,66 @@
+# Docker Compose override for using local Redis and Ollama services
+# This file disables Redis and Ollama containers and configures services to use host services
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.local-services.yml up -d
+
+services:
+  # Main Application - use local Redis and Ollama
+  app:
+    environment:
+      - REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - OLLAMA_HOST=${OLLAMA_HOST:-host.docker.internal}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+    depends_on:
+      queue-server:
+        condition: service_started
+
+  # Queue Server - use local Redis and Ollama
+  queue-server:
+    environment:
+      - REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - OLLAMA_HOST=${OLLAMA_HOST:-host.docker.internal}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+    # Remove redis dependency
+
+  # Scheduler Server - use local Ollama
+  scheduler-server:
+    environment:
+      - OLLAMA_HOST=${OLLAMA_HOST:-host.docker.internal}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+    # Remove ollama dependency
+
+  # Redis placeholder - exists only to satisfy dependencies
+  # This service stays running but does nothing (using local Redis instead)
+  redis:
+    image: alpine:latest
+    command: ["sh", "-c", "echo 'Redis placeholder - using local Redis service on host.docker.internal:6379'; tail -f /dev/null"]
+    container_name: grokforge-redis-placeholder
+    networks:
+      - grokforge-network
+    # No ports - using local Redis on host
+    healthcheck:
+      test: ["CMD", "echo", "ok"]
+      interval: 5s
+      timeout: 1s
+      retries: 1
+      start_period: 0s
+    restart: "no"
+
+  # Ollama placeholder - exists only to satisfy dependencies
+  # This service stays running but does nothing (using local Ollama instead)
+  ollama:
+    image: alpine:latest
+    command: ["sh", "-c", "echo 'Ollama placeholder - using local Ollama service on host.docker.internal:11434'; tail -f /dev/null"]
+    container_name: grokforge-ollama-placeholder
+    networks:
+      - grokforge-network
+    # No ports - using local Ollama on host
+    healthcheck:
+      test: ["CMD", "echo", "ok"]
+      interval: 30s
+      timeout: 1s
+      retries: 1
+      start_period: 0s
+    restart: "no"
+

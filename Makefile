@@ -47,6 +47,22 @@ run-local: ## Start services using local Ollama (no container, saves disk space)
 	@echo ""
 	@echo "Use 'make logs' to view logs or 'make status' to check service status."
 
+run-local-all: ## Start services using local Redis and Ollama (no containers, saves disk space)
+	@echo "$(GREEN)🚀 Starting services with local Redis and Ollama...$(NC)"
+	@echo "$(YELLOW)⚠️  Make sure Redis and Ollama are running locally$(NC)"
+	@echo "$(YELLOW)   Redis: redis-cli ping (should return PONG)$(NC)"
+	@echo "$(YELLOW)   Ollama: curl http://localhost:11434/api/tags$(NC)"
+	@docker compose -f $(COMPOSE_FILE) -f docker-compose.local-services.yml up -d
+	@echo "$(GREEN)✅ All services started!$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Services:$(NC)"
+	@echo "  • Web Server:      http://localhost:3000"
+	@echo "  • Queue Server:    http://localhost:3001"
+	@echo "  • Redis:           Using local service (localhost:6379)"
+	@echo "  • Ollama:          Using local service (http://localhost:11434)"
+	@echo ""
+	@echo "Use 'make logs' to view logs or 'make status' to check service status."
+
 stop: ## Stop all services
 	@echo "$(YELLOW)🛑 Stopping all services...$(NC)"
 	@docker compose -f $(COMPOSE_FILE) stop
