@@ -1,0 +1,109 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/grokforge
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || 'production' }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: Configure kubectl
+      run: |
+        echo "${{ secrets.KUBECONFIG }}" | base64 -d > kubeconfig
+        export KUBECONFIG=./kubeconfig
+        kubectl cluster-info
+
+    - name: Update image tags in Kubernetes manifests
+      id: set-tag
+      run: |
+        # Get image tag (use tag if available, otherwise use branch name)
+        if [ -n "${{ github.ref_name }}" ] && [[ "${{ github.ref_name }}" == v* ]]; then
+          IMAGE_TAG="${{ github.ref_name }}"
+        elif [ "${{ github.ref }}" == "refs/heads/main" ]; then
+          IMAGE_TAG="main"
+        else
+          IMAGE_TAG="${{ github.sha }}"
+        fi
+        
+        echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+        echo "Using image tag: ${IMAGE_TAG}"
+        
+        # Update image tags in YAML files
+        sed -i "s|your-registry/grokforge-app:latest|${REGISTRY}/${IMAGE_PREFIX}-app:${IMAGE_TAG}|g" k8s/app.yaml
+        sed -i "s|your-registry/grokforge-queue:latest|${REGISTRY}/${IMAGE_PREFIX}-queue:${IMAGE_TAG}|g" k8s/queue-server.yaml
+        sed -i "s|your-registry/grokforge-scheduler:latest|${REGISTRY}/${IMAGE_PREFIX}-scheduler:${IMAGE_TAG}|g" k8s/scheduler-server.yaml
+        
+        # Also update for 'latest' tag fallback
+        sed -i "s|${REGISTRY}/${IMAGE_PREFIX}-app:latest|${REGISTRY}/${IMAGE_PREFIX}-app:${IMAGE_TAG}|g" k8s/app.yaml
+        sed -i "s|${REGISTRY}/${IMAGE_PREFIX}-queue:latest|${REGISTRY}/${IMAGE_PREFIX}-queue:${IMAGE_TAG}|g" k8s/queue-server.yaml
+        sed -i "s|${REGISTRY}/${IMAGE_PREFIX}-scheduler:latest|${REGISTRY}/${IMAGE_PREFIX}-scheduler:${IMAGE_TAG}|g" k8s/scheduler-server.yaml
+
+    - name: Deploy to Kubernetes
+      run: |
+        export KUBECONFIG=./kubeconfig
+        
+        # Create namespace if not exists
+        kubectl create namespace grokforge --dry-run=client -o yaml | kubectl apply -f -
+        
+        # Apply configurations
+        kubectl apply -f k8s/namespace.yaml
+        kubectl apply -f k8s/configmap.yaml
+        kubectl apply -f k8s/persistent-volumes.yaml
+        
+        # Deploy services in order
+        kubectl apply -f k8s/redis.yaml
+        kubectl apply -f k8s/ollama.yaml
+        
+        # Wait for dependencies
+        kubectl wait --for=condition=ready pod -l app=redis -n grokforge --timeout=300s || true
+        
+        # Deploy application services
+        kubectl apply -f k8s/queue-server.yaml
+        kubectl apply -f k8s/scheduler-server.yaml
+        kubectl apply -f k8s/app.yaml
+        
+        # Wait for deployment
+        kubectl rollout status deployment/app -n grokforge --timeout=300s
+        kubectl rollout status deployment/queue-server -n grokforge --timeout=300s
+
+    - name: Verify deployment
+      run: |
+        export KUBECONFIG=./kubeconfig
+        kubectl get all -n grokforge
+        kubectl get pods -n grokforge
+
+    - name: Deployment summary
+      run: |
+        echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- Environment: ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Image Tag: ${{ steps.set-tag.outputs.IMAGE_TAG }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Commit: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- Branch: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+
