@@ -13,7 +13,7 @@ const PORT = parseInt(process.env.PORT || "3001");
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Cache-Control",
 };
 
 // Handle CORS preflight
@@ -29,51 +29,92 @@ async function handleSSE(jobId: string, request: Request): Promise<Response> {
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
+      let isClosed = false;
+
+      // Safe close function
+      const safeClose = () => {
+        if (isClosed) return;
+        try {
+          controller.close();
+          isClosed = true;
+        } catch (e) {
+          // Controller might already be closed - ignore
+          isClosed = true;
+        }
+      };
 
       // Send initial connection message
-      controller.enqueue(
-        encoder.encode(`data: ${JSON.stringify({ type: "connected", jobId })}\n\n`)
-      );
+      try {
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify({ type: "connected", jobId })}\n\n`)
+        );
+      } catch (e) {
+        safeClose();
+        return;
+      }
 
       // Heartbeat to keep connection alive
       const heartbeatInterval = setInterval(() => {
+        if (isClosed) {
+          clearInterval(heartbeatInterval);
+          return;
+        }
         try {
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ type: "heartbeat" })}\n\n`)
           );
         } catch (e) {
           clearInterval(heartbeatInterval);
+          safeClose();
         }
       }, 15000); // Every 15 seconds
 
       // Poll job status
       const pollInterval = setInterval(async () => {
+        if (isClosed) {
+          clearInterval(pollInterval);
+          clearInterval(heartbeatInterval);
+          return;
+        }
+
         try {
           const status = await getJobStatus(jobId);
 
           if (!status) {
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: "error", message: "Job not found" })}\n\n`)
-            );
+            if (!isClosed) {
+              try {
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ type: "error", message: "Job not found" })}\n\n`)
+                );
+              } catch (e) {
+                // Ignore enqueue errors
+              }
+            }
             clearInterval(pollInterval);
             clearInterval(heartbeatInterval);
-            controller.close();
+            safeClose();
             return;
           }
 
           // Send status update
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: "status",
-                jobId: status.jobId,
-                state: status.state,
-                progress: status.progress,
-                result: status.result,
-                failedReason: status.failedReason,
-              })}\n\n`
-            )
-          );
+          if (!isClosed) {
+            try {
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({
+                    type: "status",
+                    jobId: status.jobId,
+                    state: status.state,
+                    progress: status.progress,
+                    result: status.result,
+                    failedReason: status.failedReason,
+                  })}\n\n`
+                )
+              );
+            } catch (e) {
+              // Ignore enqueue errors
+            }
+          }
 
           // Close if job is completed or failed
           if (status.state === "completed" || status.state === "failed") {
@@ -82,22 +123,27 @@ async function handleSSE(jobId: string, request: Request): Promise<Response> {
             
             // Wait a bit before closing to ensure last message is sent
             setTimeout(() => {
-              controller.close();
+              safeClose();
             }, 100);
           }
         } catch (error) {
-          console.error("SSE polling error:", error);
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: "error",
-                message: error instanceof Error ? error.message : "Unknown error",
-              })}\n\n`
-            )
-          );
+          if (!isClosed) {
+            try {
+              controller.enqueue(
+                encoder.encode(
+                  `data: ${JSON.stringify({
+                    type: "error",
+                    message: error instanceof Error ? error.message : "Unknown error",
+                  })}\n\n`
+                )
+              );
+            } catch (e) {
+              // Ignore enqueue errors
+            }
+          }
           clearInterval(pollInterval);
           clearInterval(heartbeatInterval);
-          controller.close();
+          safeClose();
         }
       }, 500); // Poll every 500ms
 
@@ -105,7 +151,7 @@ async function handleSSE(jobId: string, request: Request): Promise<Response> {
       request.signal.addEventListener("abort", () => {
         clearInterval(pollInterval);
         clearInterval(heartbeatInterval);
-        controller.close();
+        safeClose();
       });
     },
   });
@@ -126,14 +172,32 @@ async function handleStreamResult(jobId: string, request: Request): Promise<Resp
     async start(controller) {
       const encoder = new TextEncoder();
       let lastProgress = 0;
+      let isClosed = false;
+
+      // Safe close function
+      const safeClose = () => {
+        if (isClosed) return;
+        try {
+          controller.close();
+          isClosed = true;
+        } catch (e) {
+          // Controller might already be closed - ignore
+          isClosed = true;
+        }
+      };
 
       const pollInterval = setInterval(async () => {
+        if (isClosed) {
+          clearInterval(pollInterval);
+          return;
+        }
+
         try {
           const status = await getJobStatus(jobId);
 
           if (!status) {
             clearInterval(pollInterval);
-            controller.close();
+            safeClose();
             return;
           }
 
@@ -143,50 +207,67 @@ async function handleStreamResult(jobId: string, request: Request): Promise<Resp
 
           if (status.state === "completed" && status.result) {
             // Send final result
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({
-                  type: "chunk",
-                  content: status.result.response,
-                  done: true,
-                })}\n\n`
-              )
-            );
+            if (!isClosed) {
+              try {
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({
+                      type: "chunk",
+                      content: status.result.response,
+                      done: true,
+                    })}\n\n`
+                  )
+                );
+              } catch (e) {
+                // Ignore enqueue errors
+              }
+            }
             clearInterval(pollInterval);
-            controller.close();
+            safeClose();
           } else if (status.state === "active" && status.progress > lastProgress) {
             // Send progress update (simulated chunk)
             lastProgress = status.progress;
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({
-                  type: "progress",
-                  progress: status.progress,
-                })}\n\n`
-              )
-            );
+            if (!isClosed) {
+              try {
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({
+                      type: "progress",
+                      progress: status.progress,
+                    })}\n\n`
+                  )
+                );
+              } catch (e) {
+                // Ignore enqueue errors
+              }
+            }
           } else if (status.state === "failed") {
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({
-                  type: "error",
-                  message: status.failedReason || "Job failed",
-                })}\n\n`
-              )
-            );
+            if (!isClosed) {
+              try {
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({
+                      type: "error",
+                      message: status.failedReason || "Job failed",
+                    })}\n\n`
+                  )
+                );
+              } catch (e) {
+                // Ignore enqueue errors
+              }
+            }
             clearInterval(pollInterval);
-            controller.close();
+            safeClose();
           }
         } catch (error) {
-          console.error("Stream polling error:", error);
           clearInterval(pollInterval);
-          controller.close();
+          safeClose();
         }
       }, 200); // Poll more frequently for streaming
 
       request.signal.addEventListener("abort", () => {
         clearInterval(pollInterval);
-        controller.close();
+        safeClose();
       });
     },
   });

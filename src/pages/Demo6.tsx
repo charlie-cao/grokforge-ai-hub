@@ -106,6 +106,41 @@ export function Demo6() {
   const eventSourcesRef = useRef<Map<string, EventSource>>(new Map());
   const responseTimeRef = useRef<Map<string, number>>(new Map());
   const abortControllerRef = useRef<AbortController | null>(null);
+  const consecutiveFailuresRef = useRef<number>(0);
+  const pollIntervalRef = useRef<number | null>(null);
+
+  // Suppress unhandled promise rejections for AbortError and fetch errors
+  useEffect(() => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const error = event.reason;
+      
+      // Suppress AbortError (user aborted requests)
+      if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
+        event.preventDefault(); // Suppress the error
+        return;
+      }
+      
+      // Suppress fetch-related errors
+      if (error && typeof error === 'object' && 'message' in error) {
+        const message = String(error.message || '');
+        if (
+          message.includes('fetch') || 
+          message.includes('Failed to fetch') || 
+          message.includes('queue') ||
+          message.includes('aborted') ||
+          message.includes('AbortError')
+        ) {
+          event.preventDefault(); // Suppress the error
+          return;
+        }
+      }
+    };
+
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    return () => {
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
 
   // Scroll to bottom
   const scrollToBottom = () => {
@@ -118,9 +153,18 @@ export function Demo6() {
 
   // Fetch queue statistics
   const fetchQueueStats = useCallback(async () => {
+    // If we've had too many consecutive failures, stop polling frequently
+    if (consecutiveFailuresRef.current > 5) {
+      return; // Stop polling if server is clearly not available
+    }
+
     // Cancel previous request if still pending
     if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
+      try {
+        abortControllerRef.current.abort();
+      } catch (e) {
+        // Ignore abort errors - controller might already be aborted
+      }
     }
     
     const abortController = new AbortController();
@@ -132,18 +176,31 @@ export function Demo6() {
       try {
         response = await fetch(`${QUEUE_API_URL}/api/queue/stats`, {
           signal: abortController.signal,
-          headers: {
-            'Cache-Control': 'no-cache',
-          },
+          // Remove Cache-Control header to avoid CORS issues
+        }).catch((fetchError: any) => {
+          // Handle network errors (connection refused, timeout, etc.)
+          if (fetchError.name === 'AbortError') {
+            return null; // Request was cancelled
+          }
+          // Return null for any network error - we'll handle it below
+          return null;
         });
       } catch (fetchError: any) {
-        // Handle network errors (connection refused, timeout, etc.)
+        // This catch should rarely be hit due to .catch() above
         if (fetchError.name === 'AbortError') {
-          return; // Request was cancelled, ignore
+          return; // Request was cancelled, ignore silently
         }
         // Network error - server might not be running
+        consecutiveFailuresRef.current++;
         setQueueServerConnected(false);
-        return;
+        return; // Exit silently, no error thrown
+      }
+
+      // Handle case where fetch returned null (network error)
+      if (!response) {
+        consecutiveFailuresRef.current++;
+        setQueueServerConnected(false);
+        return; // Exit silently
       }
 
       if (!response) {
@@ -155,6 +212,7 @@ export function Demo6() {
           const stats = await response.json();
           setQueueStats(stats);
           setQueueServerConnected(true);
+          consecutiveFailuresRef.current = 0; // Reset failure counter on success
           
           // Update queue positions for waiting messages
           if (stats.waiting > 0) {
@@ -175,19 +233,22 @@ export function Demo6() {
             );
           }
         } catch (jsonError) {
-          // JSON parse error - ignore
+          // JSON parse error - ignore silently
+          consecutiveFailuresRef.current++;
           setQueueServerConnected(false);
         }
       } else {
+        consecutiveFailuresRef.current++;
         setQueueServerConnected(false);
       }
     } catch (error: any) {
       // Catch any other unexpected errors
       if (error.name === 'AbortError') {
-        return; // Request was cancelled, ignore
+        return; // Request was cancelled, ignore silently
       }
+      consecutiveFailuresRef.current++;
       setQueueServerConnected(false);
-      // Silently handle - don't log to avoid console noise
+      // Silently handle - don't log, don't throw
     } finally {
       if (abortControllerRef.current === abortController) {
         abortControllerRef.current = null;
@@ -197,18 +258,35 @@ export function Demo6() {
 
   // Wrapper to ensure no unhandled promise rejections
   const safeFetchQueueStats = useCallback(() => {
-    fetchQueueStats().catch(() => {
+    // Use void to explicitly ignore the promise
+    void fetchQueueStats().catch(() => {
       // All errors should already be handled in fetchQueueStats
-      // This is just a safety net
+      // This is just a safety net - silently ignore
     });
   }, [fetchQueueStats]);
 
-  // Poll queue stats every 2 seconds
+  // Poll queue stats with adaptive interval
   useEffect(() => {
-    safeFetchQueueStats();
-    const interval = setInterval(safeFetchQueueStats, 2000);
+    const poll = () => {
+      safeFetchQueueStats();
+      
+      // Adaptive polling: if server is not connected, poll less frequently
+      const interval = consecutiveFailuresRef.current > 5 ? 10000 : 2000; // 10s if many failures, 2s otherwise
+      
+      if (pollIntervalRef.current) {
+        clearTimeout(pollIntervalRef.current);
+      }
+      
+      pollIntervalRef.current = window.setTimeout(poll, interval);
+    };
+
+    // Initial poll
+    poll();
+
     return () => {
-      clearInterval(interval);
+      if (pollIntervalRef.current) {
+        clearTimeout(pollIntervalRef.current);
+      }
       // Cancel any pending requests on unmount
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -320,7 +398,7 @@ export function Demo6() {
     };
 
     eventSource.onerror = (error) => {
-      console.error("SSE error:", error);
+      // Silently handle SSE errors - don't log to avoid noise
       eventSource.close();
       eventSourcesRef.current.delete(jobId);
     };
@@ -464,7 +542,7 @@ export function Demo6() {
 
     try {
       // Send question generation request to queue
-      let response: Response;
+      let response: Response | null = null;
       try {
         response = await fetch(`${QUEUE_API_URL}/api/chat`, {
           method: "POST",
@@ -483,10 +561,55 @@ export function Demo6() {
             conversationHistory: [],
             priority: selectedPriority,
           }),
+        }).catch((fetchError: any) => {
+          // Handle AbortError and network errors
+          if (fetchError.name === 'AbortError') {
+            return null; // Request was cancelled
+          }
+          return null; // Network error
         });
       } catch (fetchError: any) {
+        // This catch should rarely be hit due to .catch() above
+        if (fetchError.name === 'AbortError') {
+          // Remove generating message and exit silently
+          setMessages((prev) => prev.filter((msg) => msg.id !== generatingMessageId));
+          return;
+        }
         // Network error - queue server might not be running
-        throw new Error(`无法连接到队列服务器: ${fetchError.message || '连接失败'}`);
+        setMessages((prev) => prev.filter((msg) => msg.id !== generatingMessageId));
+        // Use fallback question
+        const fallbackQuestions = [
+          "如何提高代码质量和可维护性？",
+          "人工智能将如何改变我们的工作方式？",
+          "什么是微服务架构的最佳实践？",
+          "如何平衡工作与生活？",
+          "区块链技术的实际应用场景有哪些？",
+        ];
+        const randomQuestion =
+          fallbackQuestions[
+            Math.floor(Math.random() * fallbackQuestions.length)
+          ] || "如何提高代码质量和可维护性？";
+        setInput(randomQuestion);
+        return;
+      }
+
+      if (!response || !response.ok) {
+        // Remove generating message on error
+        setMessages((prev) => prev.filter((msg) => msg.id !== generatingMessageId));
+        // Use fallback question
+        const fallbackQuestions = [
+          "如何提高代码质量和可维护性？",
+          "人工智能将如何改变我们的工作方式？",
+          "什么是微服务架构的最佳实践？",
+          "如何平衡工作与生活？",
+          "区块链技术的实际应用场景有哪些？",
+        ];
+        const randomQuestion =
+          fallbackQuestions[
+            Math.floor(Math.random() * fallbackQuestions.length)
+          ] || "如何提高代码质量和可维护性？";
+        setInput(randomQuestion);
+        return;
       }
 
       if (!response.ok) {
@@ -552,7 +675,7 @@ export function Demo6() {
                       cleanQuestion =
                         fallbackQuestions[
                           Math.floor(Math.random() * fallbackQuestions.length)
-                        ];
+                        ] || "如何提高代码质量和可维护性？";
                     }
 
                     // Use setTimeout to avoid state update during render
@@ -587,7 +710,7 @@ export function Demo6() {
       };
 
       eventSource.onerror = (error) => {
-        console.error("SSE error:", error);
+        // Silently handle SSE errors - don't log to avoid noise
         eventSource.close();
         eventSourcesRef.current.delete(jobId);
         // Remove generating message on error
@@ -596,8 +719,13 @@ export function Demo6() {
 
       eventSourcesRef.current.set(jobId, eventSource);
       safeFetchQueueStats();
-    } catch (error) {
-      console.error("Error generating question:", error);
+    } catch (error: any) {
+      // Silently handle all errors - don't log to avoid noise
+      if (error.name === 'AbortError') {
+        // Request was cancelled - remove message silently
+        setMessages((prev) => prev.filter((msg) => msg.id !== generatingMessageId));
+        return;
+      }
       // Remove generating message on error
       setMessages((prev) => prev.filter((msg) => msg.id !== generatingMessageId));
       // Use fallback question
@@ -611,10 +739,10 @@ export function Demo6() {
       const randomQuestion =
         fallbackQuestions[
           Math.floor(Math.random() * fallbackQuestions.length)
-        ];
+        ] || "如何提高代码质量和可维护性？";
       setInput(randomQuestion);
     }
-  }, [selectedPriority, queueStats, fetchQueueStats]);
+  }, [selectedPriority, queueStats, safeFetchQueueStats]);
 
   // Handle Enter key
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
