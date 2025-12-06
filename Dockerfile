@@ -9,10 +9,18 @@ WORKDIR /app
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S bunjs -u 1001
 
+# Install timeout utility for build step protection
+RUN apk add --no-cache coreutils
+
 # Copy package files and install dependencies (with ownership)
 # Note: Not using --production because Bun needs all dependencies for runtime compilation
 COPY --chown=bunjs:nodejs package.json bun.lock ./
-RUN bun install --frozen-lockfile --verbose 
+# Install with timeout protection (30 minutes = 1800 seconds)
+# This prevents indefinite hangs during network operations
+RUN timeout 1800 bun install --frozen-lockfile --verbose || \
+    (echo "First attempt timed out or failed, retrying..." && \
+     sleep 10 && \
+     timeout 1800 bun install --frozen-lockfile --verbose) 
 
 # Copy all source files (with ownership set directly - much faster than chown -R)
 COPY --chown=bunjs:nodejs . .

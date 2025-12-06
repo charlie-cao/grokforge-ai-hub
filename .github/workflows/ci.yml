@@ -25,6 +25,9 @@ jobs:
     - name: Run type check
       run: bun run --bun tsc --noEmit
 
+    - name: Run tests
+      run: bun test --preload ./test/setup.ts
+
     - name: Run linter (if configured)
       run: echo "Linting skipped - add your linter here"
       continue-on-error: true
