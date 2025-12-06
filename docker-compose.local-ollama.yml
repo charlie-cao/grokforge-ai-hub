@@ -31,12 +31,14 @@ services:
 
   # Minimal Ollama placeholder service - exists only to satisfy dependencies
   # This service stays running but does nothing (using local Ollama instead)
+  # NOTE: No ports mapped to avoid conflict with local Ollama service
   ollama:
     image: alpine:latest
     command: ["sh", "-c", "echo 'Ollama placeholder - using local Ollama service on host.docker.internal:11434'; tail -f /dev/null"]
     container_name: grokforge-ollama-placeholder
     networks:
       - grokforge-network
+    # No ports - using local Ollama on host
     healthcheck:
       test: ["CMD", "echo", "ok"]
       interval: 30s

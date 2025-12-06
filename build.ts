@@ -122,22 +122,41 @@ const entrypoints = [...new Bun.Glob("**.html").scanSync("src")]
   .filter(dir => !dir.includes("node_modules"));
 console.log(`📄 Found ${entrypoints.length} HTML ${entrypoints.length === 1 ? "file" : "files"} to process\n`);
 
-const result = await Bun.build({
-  entrypoints,
+// Build each entrypoint separately to avoid chunk name conflicts
+const allOutputs: Bun.BuildOutput[] = [];
+const buildConfig = {
   outdir,
   plugins: [plugin],
   minify: true,
-  target: "browser",
-  sourcemap: "linked",
+  target: "browser" as const,
+  sourcemap: "linked" as const,
+  splitting: false, // Disable code splitting to avoid chunk name conflicts
   define: {
     "process.env.NODE_ENV": JSON.stringify("production"),
   },
   ...cliConfig,
-});
+};
+
+for (const entrypoint of entrypoints) {
+  const result = await Bun.build({
+    entrypoints: [entrypoint],
+    ...buildConfig,
+  });
+  
+  if (!result.success) {
+    console.error(`❌ Build failed for ${entrypoint}`);
+    for (const log of result.logs) {
+      console.error(log);
+    }
+    process.exit(1);
+  }
+  
+  allOutputs.push(...result.outputs);
+}
 
 const end = performance.now();
 
-const outputTable = result.outputs.map(output => ({
+const outputTable = allOutputs.map(output => ({
   File: path.relative(process.cwd(), output.path),
   Type: output.kind,
   Size: formatFileSize(output.size),
