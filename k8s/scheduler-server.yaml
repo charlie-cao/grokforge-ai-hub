@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler-server
+  namespace: grokforge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scheduler-server
+  template:
+    metadata:
+      labels:
+        app: scheduler-server
+    spec:
+      containers:
+      - name: scheduler-server
+        # Replace with your image registry
+        image: your-registry/grokforge-scheduler:latest
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: OLLAMA_HOST
+          value: "ollama-service"
+        - name: OLLAMA_PORT
+          value: "11434"
+        volumeMounts:
+        - name: app-data
+          mountPath: /app/data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: app-data
+        persistentVolumeClaim:
+          claimName: app-data-pvc
+

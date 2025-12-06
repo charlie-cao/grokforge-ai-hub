@@ -1,0 +1,29 @@
+# Kustomization file for easier management
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: grokforge
+
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - persistent-volumes.yaml
+  - redis.yaml
+  - ollama.yaml
+  - app.yaml
+  - queue-server.yaml
+  - scheduler-server.yaml
+  # - ingress.yaml  # Uncomment if using ingress
+
+# Image configuration (update with your registry)
+images:
+  - name: your-registry/grokforge-app
+    newName: your-registry/grokforge-app
+    newTag: latest
+  - name: your-registry/grokforge-queue
+    newName: your-registry/grokforge-queue
+    newTag: latest
+  - name: your-registry/grokforge-scheduler
+    newName: your-registry/grokforge-scheduler
+    newTag: latest
+

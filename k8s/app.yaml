@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: grokforge
+spec:
+  replicas: 2  # Scale as needed
+  selector:
+    matchLabels:
+      app: grokforge-app
+  template:
+    metadata:
+      labels:
+        app: grokforge-app
+    spec:
+      containers:
+      - name: app
+        # Replace with your image registry
+        image: your-registry/grokforge-app:latest
+        # Or use: image: grokforge-app:latest (if using local registry)
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: REDIS_HOST
+          value: "redis-service"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: OLLAMA_HOST
+          value: "ollama-service"
+        - name: OLLAMA_PORT
+          value: "11434"
+        - name: QUEUE_API_URL
+          value: "http://queue-service:3001"
+        volumeMounts:
+        - name: app-data
+          mountPath: /app/data
+        - name: logs
+          mountPath: /app/logs
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 40
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+      volumes:
+      - name: app-data
+        persistentVolumeClaim:
+          claimName: app-data-pvc
+      - name: logs
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-service
+  namespace: grokforge
+spec:
+  type: LoadBalancer  # Use ClusterIP for internal, LoadBalancer for external
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  selector:
+    app: grokforge-app
+

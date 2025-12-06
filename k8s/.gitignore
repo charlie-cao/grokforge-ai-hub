@@ -1,0 +1,7 @@
+# Secrets (never commit!)
+secrets.yaml
+*.secret.yaml
+
+# Kustomize build output
+kustomization-build.yaml
+
