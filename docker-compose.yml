@@ -4,6 +4,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      # Limit build resources to prevent CPU/memory overload
+      args:
+        BUILDKIT_INLINE_CACHE: 1
     container_name: grokforge-ai-hub
     ports:
       - "${APP_PORT:-3000}:3000"
@@ -40,6 +43,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.queue
+      # Limit build resources to prevent CPU/memory overload
+      args:
+        BUILDKIT_INLINE_CACHE: 1
     container_name: grokforge-queue-server
     ports:
       - "${QUEUE_PORT:-3001}:3001"
@@ -70,6 +76,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.scheduler
+      # Limit build resources to prevent CPU/memory overload
+      args:
+        BUILDKIT_INLINE_CACHE: 1
     container_name: grokforge-scheduler-server
     environment:
       - NODE_ENV=production

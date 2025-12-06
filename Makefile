@@ -71,7 +71,20 @@ logs-scheduler: ## View logs from scheduler server only
 
 build: ## Build all Docker images
 	@echo "$(GREEN)🔨 Building Docker images...$(NC)"
+	@echo "$(YELLOW)💡 Tip: If build fails due to CPU overload, use 'make build-low-cpu'$(NC)"
 	@docker compose -f $(COMPOSE_FILE) build
+	@echo "$(GREEN)✅ Build complete!$(NC)"
+
+build-low-cpu: ## Build with CPU throttling (prevents CPU spike/kill)
+	@echo "$(GREEN)🔨 Building Docker images with CPU throttling...$(NC)"
+	@echo "$(YELLOW)⚠️  Using nice to lower CPU priority (slower but safer)$(NC)"
+	@nice -n 19 docker compose -f $(COMPOSE_FILE) build
+	@echo "$(GREEN)✅ Build complete!$(NC)"
+
+build-timeout: ## Build all Docker images with timeout (2 hours)
+	@echo "$(GREEN)🔨 Building Docker images with 2-hour timeout...$(NC)"
+	@timeout 7200 docker compose -f $(COMPOSE_FILE) build || \
+		(echo "$(RED)❌ Build timed out or failed!$(NC)" && exit 1)
 	@echo "$(GREEN)✅ Build complete!$(NC)"
 
 rebuild: ## Rebuild all Docker images (no cache)
