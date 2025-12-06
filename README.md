@@ -2,126 +2,98 @@
 
 <div align="center">
 
-**From advice to code—deploy your solo empire!**
+**Building the Future of AI-Assisted Development**
 
-一个基于 Bun + React + Shadcn UI 的 AI 驱动业务助手 MVP，集成 Ollama/Qwen3 模型，将业务建议转换为可执行的自动化代码。
+**构建 AI 辅助开发的未来**
 
-An AI-powered business assistant MVP built with Bun + React + Shadcn UI, integrating Ollama/Qwen3 to transform business advice into executable automation code.
+[![Bun](https://img.shields.io/badge/Bun-1.3+-000000?style=for-the-badge&logo=bun)](https://bun.sh)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.1-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com)
 
-[![Bun](https://img.shields.io/badge/Bun-1.3+-000000?style=flat&logo=bun)](https://bun.sh)
-[![React](https://img.shields.io/badge/React-19-61DAFB?style=flat&logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4.1-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com)
+*A comprehensive collection of AI-powered demos and frameworks for modern development workflows*
+
+*AI 驱动的现代开发工作流演示和框架集合*
+
+[English](#english) | [中文](#中文)
 
 </div>
 
 ---
 
-## 🎉 UI Updates: Cleaner Chat for Pros / UI更新：专业聊天界面
+## 👨‍💻 About Me / 关于我
 
-- **No Sidebar, Full-Screen Focus** / **无侧边栏，全屏专注**
-  - Removed sidebar for cleaner interface
-  - 移除侧边栏，界面更简洁
-  - Top navigation with New Chat + History dropdown
-  - 顶部导航栏：新对话 + 历史记录下拉菜单
+<div align="center">
 
-- **Professional Chat Bubbles** / **专业聊天气泡**
-  - AI messages: Blue bubbles on left with Brain icon
-  - AI消息：左侧蓝色气泡，带Brain图标
-  - User messages: Gray bubbles on right
-  - 用户消息：右侧灰色气泡
-  - Timestamps and subtle borders
-  - 时间戳和轻微边框
+**Charlie Cao** | AI Developer & Vibecoding Practitioner
 
-- **AI Prompt Helper** / **AI提示词助手**
-  - Wand2 button next to input
-  - 输入框旁的Wand2按钮
-  - Modal dialog to generate optimized prompts
-  - 模态对话框生成优化提示词
-  - Auto-insert to input field
-  - 自动插入到输入框
+**Charlie Cao** | AI 开发者 & Vibecoding 实践者
 
----
+</div>
 
-## 🎉 Day 5 MVP Final: Neutral UI + Real Leads + Decision Bot / Day 5 最终MVP：中性UI + 实飞Leads + 决策Bot
+Hi! I'm **Charlie Cao**, a developer passionate about exploring the intersection of AI and software development. This repository showcases my experiments with **vibecoding** (AI-assisted collaborative development) and various modern tech stacks.
 
-- **Neutral Minimalist UI** / **中性简约界面**
-  - Switched from neon to slate/blue palette
-  - 从霓虹风格切换为 slate/blue 配色
-  - Flat buttons with subtle shadows
-  - 扁平按钮，轻微阴影
-  - Inter sans-serif font
-  - Inter 无衬线字体
+你好！我是 **Charlie Cao**，一名热衷于探索 AI 与软件开发交汇点的开发者。这个仓库展示了我对 **vibecoding**（AI 辅助协作开发）和各种现代技术栈的实践。
 
-- **LeadsBot Real Execution** / **LeadsBot 实际运行**
-  - Python code execution with Pyodide
-  - 使用 Pyodide 执行 Python 代码
-  - CSV generation detection and validation
-  - CSV 生成检测和验证
-  - Mock/real Apollo API support
-  - 支持模拟/真实 Apollo API
+### What is Vibecoding? / 什么是 Vibecoding？
 
-- **Decision Bot POC** / **决策Bot 概念验证**
-  - Virtual board agent with multi-perspective advice
-  - 多视角建议的虚拟决策板
-  - CEO/COO/Investor perspectives
-  - CEO/COO/投资者视角
-  - Decision log simulation
-  - 决策日志模拟
+**Vibecoding** is a collaborative development approach where developers work in harmony with AI assistants. It's not about replacing developers, but amplifying their capabilities through intelligent collaboration.
+
+**Vibecoding** 是一种协作开发方式，开发者与 AI 助手和谐协作。这不是要取代开发者，而是通过智能协作增强他们的能力。
+
+**Key Principles / 核心原则:**
+- 🤝 **Collaboration over replacement** - AI as a partner, not a replacement
+- 🚀 **Acceleration with quality** - Fast prototyping while maintaining code quality
+- 🎓 **Learning through doing** - Learn new technologies while building
+- 🔄 **Iteration over perfection** - Fast trial and error, continuous improvement
+
+- 🤝 **协作而非替代** - AI 是伙伴，不是替代品
+- 🚀 **加速且保证质量** - 快速原型，同时保持代码质量
+- 🎓 **在实践中学习** - 在构建中学习新技术
+- 🔄 **迭代而非完美** - 快速试错，持续改进
+
+### Connect with Me / 联系我
+
+- 🌐 **GitHub**: [@charlie-cao](https://github.com/charlie-cao)
+- 💼 **LinkedIn**: *Coming soon*
+- 📧 **Email**: *your-email@example.com*
+- 🐦 **Twitter/X**: *Coming soon*
 
 ---
 
-## 🎉 Day 4 Updates: Export & Leads Generation / Day 4 更新：导出和线索生成
+## 🎯 Project Overview / 项目概览
 
-- **One-click .py download (markdown-free)** / **一键下载 .py 文件（无 Markdown）**
-  - Automatically strips markdown code fences from exported code
-  - 自动去除导出代码中的 Markdown 代码块标记
+This repository contains **6 comprehensive demos** showcasing different aspects of AI-powered development:
 
-- **Apollo-integrated LeadsBot for marketing automation** / **集成 Apollo 的 LeadsBot 营销自动化**
-  - Specialized system prompt for lead generation queries
-  - 针对线索生成查询的专用系统提示
-  - Detects "leads" keyword in input to activate LeadsBot mode
-  - 检测输入中的 "leads" 关键词以激活 LeadsBot 模式
+本仓库包含 **6 个综合演示**，展示 AI 驱动开发的不同方面：
 
-- **Mock CSV simulation in dashboard** / **仪表板中的模拟 CSV**
-  - Visual table display of generated leads (name, email, company)
-  - 生成线索的可视化表格显示（姓名、邮箱、公司）
-  - Simulates LeadsBot execution with sample data
-  - 使用示例数据模拟 LeadsBot 执行
+### 📦 Demo Collection / 演示集合
 
----
+| Demo | Description | Tech Stack | Status |
+|------|-------------|------------|--------|
+| **Demo 1** | Interactive canvas with tldraw | tldraw, React | ✅ Complete |
+| **Demo 2** | Flow-based analysis with React Flow | React Flow, React | ✅ Complete |
+| **Demo 3** | Rich React Flow features + Agent Chat | React Flow, Ollama, SSE | ✅ Complete |
+| **Demo 4** | Integrated tech stack showcase | React Flow, Tiptap, Monaco, RGL, Zustand, Jotai, Zod | ✅ Complete |
+| **Demo 5** | Multi-tab tech stack demo | All above + Shadcn UI | ✅ Complete |
+| **Demo 6** | **Queue-based AI Chat System** | Bun.js, BullMQ, Redis, Ollama, SSE | ⭐ **Featured** |
 
-## ✨ Features / 功能特性
+### ⭐ Featured: Demo6 - Enterprise AI Chat Queue System
 
-### 🌟 Core Features / 核心功能
+**Demo6** is the crown jewel of this collection - a production-ready, enterprise-grade queue-based AI chat system built in just **2 hours** using vibecoding.
 
-- **🤖 AI-Powered Business Advice** / **AI 驱动的业务建议**
-  - Query Qwen3 model via Ollama API for solo business advice
-  - 通过 Ollama API 查询 Qwen3 模型获取独立业务建议
+**Demo6** 是这个集合中的亮点 - 一个生产就绪的企业级队列式 AI 对话系统，使用 vibecoding 仅用 **2 小时**构建。
 
-- **💻 Code Generation** / **代码生成**
-  - Automatically generate Python automation scripts from business advice
-  - 从业务建议自动生成 Python 自动化脚本
+👉 **[Read Full Demo6 Documentation (English)](docs/DEMO6_EN.md)**  
+👉 **[阅读完整 Demo6 文档（中文）](docs/DEMO6_CN.md)**
 
-- **📥 One-Click Export** / **一键导出**
-  - Download generated agent code as `bot.py` file
-  - 将生成的代理代码下载为 `bot.py` 文件
-
-- **🎨 Modern UI** / **现代化界面**
-  - Neon gradient design with smooth animations
-  - 霓虹渐变设计，流畅动画效果
-  - Dark/Light mode toggle
-  - 深色/浅色模式切换
-  - Fully responsive design
-  - 完全响应式设计
-
-- **⚡ Performance Optimized** / **性能优化**
-  - React hooks optimization with `useCallback`
-  - 使用 `useCallback` 优化 React hooks
-  - Memory leak prevention
-  - 防止内存泄漏
-  - Efficient state management
-  - 高效的状态管理
+**Key Features / 核心特性:**
+- 🚀 **Queue Management** - Priority-based task queuing with BullMQ
+- 📊 **Real-time Monitoring** - Live progress tracking via SSE
+- 🔄 **Auto Retry** - Intelligent retry mechanism
+- 📈 **Performance Metrics** - Response time, throughput, success rate
+- 🌐 **i18n Support** - Full Chinese/English interface
+- ⚡ **High Performance** - Bun.js runtime, <1s startup
 
 ---
 
@@ -130,44 +102,78 @@ An AI-powered business assistant MVP built with Bun + React + Shadcn UI, integra
 ### Prerequisites / 前置要求
 
 - [Bun](https://bun.sh) v1.3+ installed
-- Ollama running locally with `qwen3:latest` model
-
-```bash
-# Install Ollama and pull qwen3 model
-ollama pull qwen3:latest
-```
+- [Docker](https://www.docker.com) (for Demo6 Redis)
+- [Ollama](https://ollama.ai) with `qwen3:latest` model
 
 ### Installation / 安装
 
 ```bash
 # Clone the repository
-git clone git@github.com:charlie-cao/grokforge-ai-hub.git
+git clone https://github.com/charlie-cao/grokforge-ai-hub.git
 cd grokforge-ai-hub
 
 # Install dependencies
 bun install
 ```
 
-### Development / 开发
+### Running Demos / 运行演示
+
+#### All Demos (Main App) / 所有演示（主应用）
 
 ```bash
-# Start development server with hot reload
+# Start development server
 bun dev
+
+# Access at http://localhost:3000
+# Navigate to /demo1, /demo2, /demo3, /demo4, /demo5, or /demo6
 ```
 
-The app will be available at `http://localhost:3000` (or the port shown in console).
-
-应用将在 `http://localhost:3000` 可用（或控制台显示的端口）。
-
-### Production / 生产环境
+#### Demo6 (Queue System) / Demo6（队列系统）
 
 ```bash
-# Build for production
-bun run build
+# Start Redis (in separate terminal)
+docker-compose -f docker-compose.demo6.yml up -d
 
-# Start production server
-bun start
+# Start queue server (in separate terminal)
+bun run demo6:server
+
+# Start frontend (in separate terminal)
+bun dev
+
+# Access Demo6 at http://localhost:3000/demo6
 ```
+
+For detailed Demo6 setup, see [Demo6 Quick Start Guide](docs/DEMO6_QUICKSTART.md).
+
+详细的 Demo6 设置，请参阅 [Demo6 快速开始指南](docs/DEMO6_QUICKSTART.md)。
+
+---
+
+## 🛠️ Tech Stack / 技术栈
+
+### Core Technologies / 核心技术
+
+- **Runtime**: [Bun.js](https://bun.sh) - Ultra-fast JavaScript runtime
+- **Frontend**: [React 19](https://react.dev) - Modern UI library
+- **Language**: [TypeScript](https://www.typescriptlang.org) - Type-safe development
+- **Styling**: [Tailwind CSS 4.1](https://tailwindcss.com) - Utility-first CSS
+- **UI Components**: [Shadcn UI](https://ui.shadcn.com) - Beautiful, accessible components
+
+### AI & Backend / AI 与后端
+
+- **AI Model**: [Qwen3](https://qwenlm.github.io) via [Ollama](https://ollama.ai)
+- **Queue System**: [BullMQ](https://docs.bullmq.io) - Modern Redis-based queue
+- **Database**: [Redis](https://redis.io) - In-memory data store
+- **Real-time**: [Server-Sent Events (SSE)](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events)
+
+### Advanced Libraries / 高级库
+
+- **Canvas/Flow**: [React Flow](https://reactflow.dev), [tldraw](https://tldraw.com)
+- **Rich Text**: [Tiptap](https://tiptap.dev)
+- **Code Editor**: [Monaco Editor](https://microsoft.github.io/monaco-editor)
+- **Layout**: [React Grid Layout](https://github.com/react-grid-layout/react-grid-layout)
+- **State Management**: [Zustand](https://zustand-demo.pmnd.rs), [Jotai](https://jotai.org)
+- **Validation**: [Zod](https://zod.dev)
 
 ---
 
@@ -176,180 +182,226 @@ bun start
 ```
 grokforge-ai-hub/
 ├── src/
-│   ├── App.tsx              # Main application component
-│   ├── APITester.tsx        # API testing component
-│   ├── components/
-│   │   └── ui/              # Shadcn UI components
-│   ├── lib/
-│   │   └── utils.ts         # Utility functions (Qwen3 API)
-│   ├── index.ts             # Server entry point
-│   ├── frontend.tsx         # React app entry point
-│   └── index.css            # Global styles
-├── styles/
-│   └── globals.css          # Tailwind CSS configuration
-├── package.json
-├── tsconfig.json
-└── README.md
+│   ├── pages/              # Demo pages (Demo1-6)
+│   ├── components/         # Reusable components
+│   │   └── ui/             # Shadcn UI components
+│   ├── lib/                # Utilities & configurations
+│   │   ├── i18n.ts         # Internationalization
+│   │   ├── models.ts       # AI model management
+│   │   └── utils.ts        # Helper functions
+│   ├── server/             # Backend servers
+│   │   ├── demo6-queue.ts  # Queue worker
+│   │   └── demo6-server.ts # HTTP server
+│   └── index.ts            # Main server entry
+├── docs/                   # Documentation
+│   ├── DEMO6_CN.md         # Demo6 Chinese docs
+│   ├── DEMO6_EN.md         # Demo6 English docs
+│   └── TOOLS_EVALUATION.md # Tech stack evaluation
+├── scripts/                # Utility scripts
+├── docker-compose.demo6.yml # Redis configuration
+└── README.md               # This file
 ```
 
 ---
 
-## 🎯 Usage / 使用方法
+## 🎨 Demo Highlights / 演示亮点
 
-### 1. Query Business Advice / 查询业务建议
+### Demo 1: Interactive Canvas / 交互式画布
+- Real-time canvas editing with tldraw
+- Dynamic shape creation and manipulation
+- Smooth, fluid user interactions
 
-1. Enter your business question in the textarea (e.g., "Fix time trap")
-2. Click "Summon Qwen3 Wisdom" button
-3. Wait for AI response
+### Demo 2: Flow Analysis / 流程分析
+- React Flow-based analysis workflow
+- Step-by-step process visualization
+- Click-to-generate functionality
 
-在文本框中输入业务问题（例如："Fix time trap"），点击 "Summon Qwen3 Wisdom" 按钮，等待 AI 响应。
+### Demo 3: Agent Chat / 智能体对话
+- Real-time streaming AI responses
+- Multiple custom node types
+- Interactive flow editing
 
-### 2. Generate Agent Code / 生成代理代码
+### Demo 4: Tech Stack Integration / 技术栈整合
+- Comprehensive showcase of modern tools
+- React Flow + Tiptap + Monaco + RGL
+- Zustand + Jotai + Zod integration
 
-1. After receiving advice, click "🚀 Deploy Agent"
-2. The system will generate Python automation code based on the advice
-3. Code will appear in a styled code block
+### Demo 5: Multi-Tab Showcase / 多标签展示
+- Organized tech stack presentation
+- Detailed feature descriptions
+- Interactive examples
 
-收到建议后，点击 "🚀 Deploy Agent"，系统将基于建议生成 Python 自动化代码，代码将显示在样式化的代码块中。
-
-### 3. Download Code / 下载代码
-
-1. Click "💾 Download Bot.py - Export your empire code!"
-2. The `bot.py` file will be downloaded to your device
-
-点击 "💾 Download Bot.py - Export your empire code!"，`bot.py` 文件将下载到您的设备。
-
----
-
-## 🛠️ Tech Stack / 技术栈
-
-- **Runtime**: [Bun](https://bun.sh) - Fast all-in-one JavaScript runtime
-- **Frontend**: [React 19](https://react.dev) - UI library
-- **UI Components**: [Shadcn UI](https://ui.shadcn.com) - Beautiful component library
-- **Styling**: [Tailwind CSS 4.1](https://tailwindcss.com) - Utility-first CSS
-- **AI Model**: [Qwen3](https://qwenlm.github.io) via [Ollama](https://ollama.ai)
-- **Language**: TypeScript - Type-safe JavaScript
+### Demo 6: Enterprise Queue System / 企业级队列系统 ⭐
+- Production-ready architecture
+- Real-time status monitoring
+- Performance metrics dashboard
+- Full i18n support
 
 ---
 
-## 🔧 Configuration / 配置
+## 💡 Key Learnings / 核心收获
 
-### Ollama API Configuration / Ollama API 配置
+### Vibecoding Benefits / Vibecoding 优势
 
-The app connects to Ollama API at `http://localhost:11434/api/generate`. Make sure Ollama is running:
+1. **Rapid Prototyping** - Build complete systems in hours, not days
+2. **Code Quality** - AI-generated code is well-structured and type-safe
+3. **Learning Efficiency** - Learn new technologies while building
+4. **Iteration Speed** - Fast trial and error, rapid improvement
 
-应用连接到 `http://localhost:11434/api/generate` 的 Ollama API。确保 Ollama 正在运行：
+### Technical Insights / 技术洞察
 
-```bash
-# Check if Ollama is running
-ollama serve
-
-# Verify qwen3 model is available
-ollama list
-```
-
-### Customization / 自定义
-
-You can modify the model name in `src/lib/utils.ts`:
-
-可以在 `src/lib/utils.ts` 中修改模型名称：
-
-```typescript
-model: "qwen3:latest", // Change to your preferred model
-```
+- **Bun.js** is a game-changer for AI backends (4x faster startup)
+- **BullMQ** provides enterprise-grade queue management
+- **SSE** is perfect for one-way real-time updates
+- **TypeScript** ensures type safety across the stack
 
 ---
 
-## 🎨 UI Features / 界面特性
+## 📊 Project Statistics / 项目统计
 
-- **Neon Gradient Buttons**: Purple-to-pink gradient with glow effects
-- **Animated Header**: Subtle bounce animation on title
-- **Dark Mode**: Toggle between light and dark themes
-- **Loading States**: Spinning emoji indicators during API calls
-- **Success Toasts**: Animated notifications for completed actions
-- **Responsive Design**: Works perfectly on mobile and desktop
-
-- **霓虹渐变按钮**: 紫色到粉色的渐变，带发光效果
-- **动画标题**: 标题上的轻微弹跳动画
-- **深色模式**: 在浅色和深色主题之间切换
-- **加载状态**: API 调用期间的旋转表情符号指示器
-- **成功提示**: 完成操作的动画通知
-- **响应式设计**: 在移动设备和桌面设备上完美运行
+- **Total Demos**: 6
+- **Lines of Code**: ~15,000+
+- **Technologies Used**: 20+
+- **Development Time**: ~2 hours per major demo
+- **Languages**: TypeScript, Python (Pyodide)
+- **Architecture**: Monorepo, Microservices (Demo6)
 
 ---
 
-## 📝 API Endpoints / API 端点
+## 🔮 Roadmap / 路线图
 
-The server includes example API endpoints:
+### Short-term / 短期 (1-2 weeks)
+- [ ] Add more AI model integrations (OpenAI, Anthropic)
+- [ ] Implement user authentication
+- [ ] Add conversation history persistence
+- [ ] Performance optimizations
 
-服务器包含示例 API 端点：
+### Medium-term / 中期 (1-2 months)
+- [ ] Batch task processing
+- [ ] Scheduled task support
+- [ ] Webhook integrations
+- [ ] Advanced monitoring dashboard
 
-- `GET /api/hello` - Hello world endpoint
-- `PUT /api/hello` - Hello world endpoint (PUT method)
-- `GET /api/hello/:name` - Personalized hello endpoint
-
----
-
-## 🐛 Troubleshooting / 故障排除
-
-### Ollama Connection Issues / Ollama 连接问题
-
-If you see connection errors, ensure:
-
-如果看到连接错误，请确保：
-
-1. Ollama is running: `ollama serve`
-2. Qwen3 model is installed: `ollama pull qwen3:latest`
-3. Port 11434 is not blocked by firewall
-
-### Build Issues / 构建问题
-
-```bash
-# Clear cache and reinstall
-rm -rf node_modules bun.lock
-bun install
-```
+### Long-term / 长期 (3-6 months)
+- [ ] Distributed deployment
+- [ ] Multi-tenant architecture
+- [ ] Plugin system
+- [ ] Visual workflow editor
 
 ---
 
 ## 🤝 Contributing / 贡献
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! This project is a learning journey, and I'd love to collaborate.
 
-欢迎贡献！请随时提交 Pull Request。
+欢迎贡献！这个项目是一个学习之旅，我很乐意合作。
 
-**Fork/Star for free bots!** 🚀
+### How to Contribute / 如何贡献
 
-Fork this repo to get your own AI hub, or star it to support the project!
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
 
-Fork 此仓库以获取您自己的 AI 中心，或 Star 以支持项目！
+### Areas for Contribution / 贡献领域
+
+- 🐛 Bug fixes
+- ✨ New features
+- 📚 Documentation improvements
+- 🎨 UI/UX enhancements
+- ⚡ Performance optimizations
+- 🌐 Additional language support
+
+---
+
+## 📚 Documentation / 文档
+
+- **[Demo6 Full Documentation (English)](docs/DEMO6_EN.md)** - Complete guide to Demo6
+- **[Demo6 完整文档（中文）](docs/DEMO6_CN.md)** - Demo6 完整指南
+- **[Demo6 Quick Start](docs/DEMO6_QUICKSTART.md)** - Quick setup guide
+- **[Tech Stack Evaluation](docs/TOOLS_EVALUATION.md)** - Detailed tech analysis
+
+---
+
+## 🐛 Troubleshooting / 故障排除
+
+### Common Issues / 常见问题
+
+**Ollama Connection Error / Ollama 连接错误**
+```bash
+# Ensure Ollama is running
+ollama serve
+
+# Verify model is installed
+ollama list
+ollama pull qwen3:latest
+```
+
+**Redis Connection Error / Redis 连接错误**
+```bash
+# Check if Redis is running
+docker ps | grep redis
+
+# Start Redis if not running
+docker-compose -f docker-compose.demo6.yml up -d
+```
+
+**Port Conflicts / 端口冲突**
+- Frontend: Change port in `src/index.ts`
+- Queue Server: Set `PORT` environment variable
+- Redis: Modify `docker-compose.demo6.yml`
 
 ---
 
 ## 📄 License / 许可证
 
-This project is private and proprietary.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-本项目为私有和专有项目。
+本项目采用 MIT 许可证 - 详情请参阅 [LICENSE](LICENSE) 文件。
 
 ---
 
 ## 🙏 Acknowledgments / 致谢
 
-- [Bun](https://bun.sh) - Amazing JavaScript runtime
-- [React](https://react.dev) - UI library
-- [Shadcn UI](https://ui.shadcn.com) - Beautiful components
-- [Ollama](https://ollama.ai) - Local AI model hosting
-- [Qwen3](https://qwenlm.github.io) - Powerful AI model
+Special thanks to:
+
+- **[Bun.js Team](https://bun.sh)** - Amazing JavaScript runtime
+- **[React Team](https://react.dev)** - Powerful UI library
+- **[Ollama Team](https://ollama.ai)** - Local LLM solution
+- **[BullMQ Team](https://docs.bullmq.io)** - Enterprise queue system
+- **[Shadcn](https://ui.shadcn.com)** - Beautiful UI components
+- **All open-source contributors** - Making development better
+
+特别感谢：
+
+- **[Bun.js 团队](https://bun.sh)** - 优秀的 JavaScript 运行时
+- **[React 团队](https://react.dev)** - 强大的 UI 库
+- **[Ollama 团队](https://ollama.ai)** - 本地 LLM 解决方案
+- **[BullMQ 团队](https://docs.bullmq.io)** - 企业级队列系统
+- **[Shadcn](https://ui.shadcn.com)** - 精美的 UI 组件
+- **所有开源贡献者** - 让开发变得更好
+
+---
+
+## 🌟 Star History / Star 历史
+
+If you find this project helpful, please consider giving it a star! ⭐
+
+如果你觉得这个项目有帮助，请考虑给它一个 star！⭐
 
 ---
 
 <div align="center">
 
-**Built with ❤️ for solo entrepreneurs**
+**Built with ❤️ by [Charlie Cao](https://github.com/charlie-cao)**
 
-**为独立创业者打造 ❤️**
+**用 ❤️ 构建 by [Charlie Cao](https://github.com/charlie-cao)**
 
-[Report Bug](https://github.com/charlie-cao/grokforge-ai-hub/issues) · [Request Feature](https://github.com/charlie-cao/grokforge-ai-hub/issues)
+*Exploring the future of AI-assisted development*
+
+*探索 AI 辅助开发的未来*
+
+[Report Bug](https://github.com/charlie-cao/grokforge-ai-hub/issues) · [Request Feature](https://github.com/charlie-cao/grokforge-ai-hub/issues) · [View All Demos](http://localhost:3000)
 
 </div>

@@ -3,11 +3,34 @@
 > **Demo6: 基于队列的企业级 AI 对话系统**  
 > 一个尝试用 AI 协作开发（vibecoding）构建的 AI 开发工作流基础框架
 
+<div align="center">
+
+**作者：Charlie Cao | AI 开发者 & Vibecoding 实践者**
+
+[![GitHub](https://img.shields.io/badge/GitHub-charlie--cao-181717?style=flat&logo=github)](https://github.com/charlie-cao)
+[![Bun](https://img.shields.io/badge/Bun-1.3+-000000?style=flat&logo=bun)](https://bun.sh)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org)
+
+</div>
+
 ## 前言
 
-大家好！最近我在尝试一种新的开发方式——**vibecoding**（和 AI 一起协作编程）。花了大概 2 个小时，用 Cursor + AI 助手一起构建了这个 Demo6 项目。想和大家分享一下这个过程，也希望能得到大家的指教和建议！
+大家好！我是 **Charlie Cao**，一个热衷于探索 AI 与软件开发交汇点的开发者。
+
+最近我在尝试一种新的开发方式——**vibecoding**（和 AI 一起协作编程）。花了大概 2 个小时，用 Cursor + AI 助手一起构建了这个 Demo6 项目。想和大家分享一下这个过程，也希望能得到大家的指教和建议！
 
 这个项目本质上是一个**企业级 AI 对话系统的基础框架**，核心思路是：**如何让 AI 开发工作流更加高效、可控、可扩展**。
+
+### 关于 Vibecoding
+
+**Vibecoding** 是我给这种开发方式起的名字：**和 AI 一起"共振"编程**。不是简单的"AI 写代码我复制"，而是：
+
+- 🤝 **协作而非替代**：AI 是伙伴，不是替代品
+- 🚀 **加速而非偷懒**：快速原型，但保持代码质量
+- 🎓 **学习而非依赖**：在协作中学习新技术
+- 🔄 **迭代而非完美**：快速试错，持续改进
+
+如果你也在尝试类似的开发方式，欢迎交流！
 
 ## 🎯 项目目标
 

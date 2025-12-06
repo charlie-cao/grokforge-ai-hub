@@ -3,11 +3,34 @@
 > **Demo6: Enterprise-Grade Queue-Based AI Chat System**  
 > A foundational framework for AI development workflows, built through vibecoding (AI-assisted collaborative development)
 
+<div align="center">
+
+**Author: Charlie Cao | AI Developer & Vibecoding Practitioner**
+
+[![GitHub](https://img.shields.io/badge/GitHub-charlie--cao-181717?style=flat&logo=github)](https://github.com/charlie-cao)
+[![Bun](https://img.shields.io/badge/Bun-1.3+-000000?style=flat&logo=bun)](https://bun.sh)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org)
+
+</div>
+
 ## Preface
 
-Hey everyone! I've been experimenting with a new development approach called **vibecoding** (collaborative programming with AI). I spent about 2 hours building this Demo6 project using Cursor + AI assistant, and I wanted to share the experience with you all. I'd love to get your feedback and suggestions!
+Hey everyone! I'm **Charlie Cao**, a developer passionate about exploring the intersection of AI and software development.
+
+I've been experimenting with a new development approach called **vibecoding** (collaborative programming with AI). I spent about 2 hours building this Demo6 project using Cursor + AI assistant, and I wanted to share the experience with you all. I'd love to get your feedback and suggestions!
 
 This project is essentially a **foundational framework for enterprise-grade AI chat systems**. The core idea is: **how to make AI development workflows more efficient, controllable, and scalable**.
+
+### About Vibecoding
+
+**Vibecoding** is what I call this development approach: **"resonating" with AI while programming**. It's not just "AI writes code, I copy it", but rather:
+
+- 🤝 **Collaboration, not replacement**: AI is a partner, not a replacement
+- 🚀 **Acceleration, not laziness**: Rapid prototyping while maintaining code quality
+- 🎓 **Learning, not dependency**: Learn new technologies while collaborating
+- 🔄 **Iteration, not perfection**: Fast trial and error, continuous improvement
+
+If you're also trying similar development approaches, let's connect!
 
 ## 🎯 Project Goals
 
@@ -290,7 +313,36 @@ MIT License
 
 ---
 
+## 📞 Connect with Me
+
+If you're interested in this project or want to discuss vibecoding, AI development workflows, or related topics, feel free to reach out:
+
+如果你对这个项目感兴趣，或者想讨论 vibecoding、AI 开发工作流等相关话题，欢迎联系：
+
+- 🌐 **GitHub**: [@charlie-cao](https://github.com/charlie-cao)
+- 💼 **LinkedIn**: *Coming soon*
+- 📧 **Email**: *your-email@example.com*
+- 🐦 **Twitter/X**: *Coming soon*
+
+---
+
 **Finally, thanks again for your attention! If this project helps you, or if you want to improve it together, let's connect!** 🚀
 
 *P.S. If you're also trying vibecoding, please share your experiences and insights!*
+
+---
+
+<div align="center">
+
+**Built with ❤️ by [Charlie Cao](https://github.com/charlie-cao)**
+
+**用 ❤️ 构建 by [Charlie Cao](https://github.com/charlie-cao)**
+
+*Exploring the future of AI-assisted development*
+
+*探索 AI 辅助开发的未来*
+
+[⭐ Star this repo](https://github.com/charlie-cao/grokforge-ai-hub) · [🐛 Report Bug](https://github.com/charlie-cao/grokforge-ai-hub/issues) · [💡 Request Feature](https://github.com/charlie-cao/grokforge-ai-hub/issues)
+
+</div>
 
