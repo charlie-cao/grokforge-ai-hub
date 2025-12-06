@@ -93,17 +93,17 @@ build-serial: ## Build images one at a time (prevents memory/CPU overload)
 	@sleep 5
 	@echo ""
 	@echo "$(GREEN)📦 Building queue-server...$(NC)"
-	@nice -n 19 docker compose -f $(COMPOSE_FILE) build --no-parallel queue-server || \
+	@nice -n 19 docker compose -f $(COMPOSE_FILE) build queue-server || \
 		(echo "$(RED)❌ queue-server build failed!$(NC)" && exit 1)
 	@echo "$(YELLOW)⏳ Waiting 3 seconds before next build...$(NC)"
 	@sleep 3
 	@echo "$(GREEN)📦 Building scheduler-server...$(NC)"
-	@nice -n 19 docker compose -f $(COMPOSE_FILE) build --no-parallel scheduler-server || \
+	@nice -n 19 docker compose -f $(COMPOSE_FILE) build scheduler-server || \
 		(echo "$(RED)❌ scheduler-server build failed!$(NC)" && exit 1)
 	@echo "$(YELLOW)⏳ Waiting 3 seconds before next build...$(NC)"
 	@sleep 3
 	@echo "$(GREEN)📦 Building app...$(NC)"
-	@nice -n 19 docker compose -f $(COMPOSE_FILE) build --no-parallel app || \
+	@nice -n 19 docker compose -f $(COMPOSE_FILE) build app || \
 		(echo "$(RED)❌ app build failed!$(NC)" && exit 1)
 	@echo "$(GREEN)✅ All images built successfully!$(NC)"
 

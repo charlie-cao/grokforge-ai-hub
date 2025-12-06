@@ -18,6 +18,44 @@ if ! command -v bun &> /dev/null; then
     exit 1
 fi
 
+# 检查系统内存
+check_memory() {
+    total_mem=$(free -m | awk '/^Mem:/{print $2}')
+    available_mem=$(free -m | awk '/^Mem:/{print $7}')
+    swap_total=$(free -m | awk '/^Swap:/{print $2}')
+    
+    echo -e "${YELLOW}📊 系统资源:${NC}"
+    echo "  总内存: ${total_mem}MB"
+    echo "  可用内存: ${available_mem}MB"
+    echo "  Swap: ${swap_total}MB"
+    echo ""
+    
+    # 如果内存 < 1GB 且没有 swap，建议创建 swap
+    if [ "$total_mem" -lt 1024 ] && [ "$swap_total" -eq 0 ]; then
+        echo -e "${RED}⚠️  警告: 系统内存 < 1GB 且没有 Swap！${NC}"
+        echo -e "${YELLOW}建议创建 2GB swap 文件以避免 OOM kill:${NC}"
+        echo "  chmod +x scripts/setup-swap.sh"
+        echo "  sudo ./scripts/setup-swap.sh 2G"
+        echo ""
+        read -p "是否现在创建 swap? (y/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            if [ -f "scripts/setup-swap.sh" ]; then
+                chmod +x scripts/setup-swap.sh
+                sudo ./scripts/setup-swap.sh 2G
+            else
+                echo -e "${YELLOW}⚠️  setup-swap.sh 不存在，手动创建:${NC}"
+                echo "  sudo fallocate -l 2G /swapfile"
+                echo "  sudo chmod 600 /swapfile"
+                echo "  sudo mkswap /swapfile"
+                echo "  sudo swapon /swapfile"
+            fi
+        fi
+    fi
+}
+
+check_memory
+
 # 检查 Redis 是否运行
 if ! command -v redis-cli &> /dev/null; then
     echo -e "${YELLOW}⚠️  Redis CLI 未找到，请确保 Redis 服务正在运行${NC}"
@@ -61,7 +99,50 @@ echo ""
 # 安装依赖（如果需要）
 if [ ! -d "node_modules" ]; then
     echo -e "${YELLOW}📦 安装依赖...${NC}"
-    bun install
+    echo -e "${YELLOW}⚠️  检测到低内存系统，使用内存限制安装...${NC}"
+    
+    # 检查可用内存
+    available_mem=$(free -m | awk '/^Mem:/{print $7}')
+    echo "可用内存: ${available_mem}MB"
+    
+    # 如果内存 < 500MB，使用更保守的方式
+    if [ "$available_mem" -lt 500 ]; then
+        echo -e "${RED}⚠️  内存严重不足 (${available_mem}MB < 500MB)${NC}"
+        echo -e "${YELLOW}建议:${NC}"
+        echo "  1. 创建 swap 文件增加虚拟内存"
+        echo "  2. 或使用: ulimit -v 300000 bun install"
+        echo ""
+        read -p "是否继续安装? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    fi
+    
+    # 使用内存限制和低优先级安装
+    # ulimit -v 限制虚拟内存 (300MB = 300000KB)
+    # nice -n 19 降低 CPU 优先级
+    if ulimit -v 300000 2>/dev/null; then
+        echo -e "${GREEN}✅ 已设置内存限制 (300MB)${NC}"
+        nice -n 19 bun install --frozen-lockfile || {
+            echo -e "${RED}❌ 安装失败，尝试不使用内存限制...${NC}"
+            bun install --frozen-lockfile || {
+                echo -e "${RED}❌ 安装失败！${NC}"
+                echo -e "${YELLOW}建议:${NC}"
+                echo "  1. 增加 swap: sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile"
+                echo "  2. 或分步安装: 先安装核心依赖，再安装其他"
+                exit 1
+            }
+        }
+    else
+        echo -e "${YELLOW}⚠️  无法设置内存限制，使用低优先级安装...${NC}"
+        nice -n 19 bun install --frozen-lockfile || {
+            echo -e "${RED}❌ 安装失败！${NC}"
+            exit 1
+        }
+    fi
+    
+    echo -e "${GREEN}✅ 依赖安装完成${NC}"
 fi
 
 # 创建日志目录
