@@ -1,0 +1,43 @@
+# 根据文件路径自动添加 PR 标签
+
+frontend:
+  - src/components/**
+  - src/pages/**
+  - '*.tsx'
+  - '*.css'
+  - '*.html'
+
+backend:
+  - src/server/**
+  - '*.api.ts'
+  - '*.server.ts'
+
+docs:
+  - docs/**
+  - '*.md'
+  - README*
+
+docker:
+  - Dockerfile*
+  - docker-compose*.yml
+  - .dockerignore
+
+ci-cd:
+  - .github/workflows/**
+  - .github/actions/**
+
+config:
+  - package.json
+  - tsconfig.json
+  - bunfig.toml
+  - '*.config.*'
+
+test:
+  - '**/*.test.ts'
+  - '**/*.test.tsx'
+  - '**/*.spec.ts'
+  - test/**
+
+scripts:
+  - scripts/**
+

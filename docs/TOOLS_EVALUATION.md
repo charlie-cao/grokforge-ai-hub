@@ -373,7 +373,7 @@ Bun + Elysia + Bun SQLite + Bun Shell
 
 ### ❓ Bun 有无可直接使用的高级脚手架系统？
 
-截至 2024 年，**Bun 生态还没有类似 create-next-app 或 create-react-app 那样“一键式模板+项目生成+特性插件”高度集成的官方脚手架**。目前常见 Bun 项目初始化方式有：
+截至 2025 年，**Bun 生态还没有类似 create-next-app 或 create-react-app 那样“一键式模板+项目生成+特性插件”高度集成的官方脚手架**。目前常见 Bun 项目初始化方式有：
 
 - **bun create**  
   Bun 原生命令，可以通过 `bun create` 调用社区模板，快速初始化项目。例如：

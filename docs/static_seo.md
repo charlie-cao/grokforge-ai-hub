@@ -58,7 +58,7 @@ SEO 具体优化：
 成熟方案推荐
 
 Astro + Bun（最推荐）：
-为什么成熟：Astro 是 2024-2025 年流行 SSG，专为内容站点（如博客、文档）设计，支持 Markdown/MDX 静态渲染。Bun 集成无缝，构建速度提升显著。
+为什么成熟：Astro 是 2025-2025 年流行 SSG，专为内容站点（如博客、文档）设计，支持 Markdown/MDX 静态渲染。Bun 集成无缝，构建速度提升显著。
 示例项目：用 bun create astro 初始化，添加内容集合后构建静态导出。部署到 Netlify/Vercel，支持 ISR（增量静态再生）结合 SEO。
 资源：Astro 官方 SEO 指南，提供插件如 partial hydration 最小化 JS。
 
