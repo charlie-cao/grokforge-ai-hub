@@ -100,8 +100,7 @@ services:
       - grokforge-network
     restart: unless-stopped
     healthcheck:
-      test: >
-        sh -c "redis-cli ${REDIS_PASSWORD:+-a $REDIS_PASSWORD} ping"
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
