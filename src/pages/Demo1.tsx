@@ -1,346 +1,614 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Tldraw, useEditor, TLShapeId } from "tldraw";
-import "tldraw/tldraw.css";
-import { modelManager } from "../lib/models";
+import { useState, useCallback, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { useDemo1Translations, type Language } from "../lib/demo1-i18n";
+import {
+  // Common icons
+  Home,
+  User,
+  Settings,
+  Search,
+  Heart,
+  Star,
+  Bookmark,
+  Download,
+  Upload,
+  Share,
+  Edit,
+  Trash,
+  Plus,
+  Minus,
+  Check,
+  X,
+  ChevronRight,
+  ChevronLeft,
+  ArrowRight,
+  ArrowLeft,
+  // Feature icons
+  Zap,
+  Sparkles,
+  Code,
+  Palette,
+  Moon,
+  Sun,
+  Monitor,
+  Globe,
+  Github,
+  Package,
+  FileText,
+  Copy,
+  CheckCircle2,
+} from "lucide-react";
 import "../index.css";
 
-interface AnalysisStep {
-  id: string;
-  text: string;
-  tool?: string;
-  x: number;
-  y: number;
-}
+// Icon categories for showcase
+const iconCategories = {
+  common: [
+    { name: "Home", icon: Home },
+    { name: "User", icon: User },
+    { name: "Settings", icon: Settings },
+    { name: "Search", icon: Search },
+    { name: "Heart", icon: Heart },
+    { name: "Star", icon: Star },
+    { name: "Bookmark", icon: Bookmark },
+  ],
+  actions: [
+    { name: "Download", icon: Download },
+    { name: "Upload", icon: Upload },
+    { name: "Share", icon: Share },
+    { name: "Edit", icon: Edit },
+    { name: "Trash", icon: Trash },
+    { name: "Plus", icon: Plus },
+    { name: "Minus", icon: Minus },
+  ],
+  navigation: [
+    { name: "Check", icon: Check },
+    { name: "X", icon: X },
+    { name: "ChevronRight", icon: ChevronRight },
+    { name: "ChevronLeft", icon: ChevronLeft },
+    { name: "ArrowRight", icon: ArrowRight },
+    { name: "ArrowLeft", icon: ArrowLeft },
+  ],
+  features: [
+    { name: "Zap", icon: Zap },
+    { name: "Sparkles", icon: Sparkles },
+    { name: "Code", icon: Code },
+    { name: "Palette", icon: Palette },
+  ],
+};
 
 export function Demo1() {
-  const [inputShapeId, setInputShapeId] = useState<TLShapeId | null>(null);
-  const [loadingShapeId, setLoadingShapeId] = useState<TLShapeId | null>(null);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisSteps, setAnalysisSteps] = useState<AnalysisStep[]>([]);
-  const editorRef = useRef<any>(null);
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("demo1-language");
+      return (saved === "en" ? "en" : "zh") as Language;
+    }
+    return "zh";
+  });
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [theme, setTheme] = useState<"light" | "dark" | "system">(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("demo1-theme");
+      return (saved === "light" || saved === "dark" || saved === "system" ? saved : "system") as "light" | "dark" | "system";
+    }
+    return "system";
+  });
+
+  const t = useDemo1Translations(language);
+
+  const toggleLanguage = useCallback(() => {
+    const newLang = language === "zh" ? "en" : "zh";
+    setLanguage(newLang);
+    localStorage.setItem("demo1-language", newLang);
+  }, [language]);
+
+  useEffect(() => {
+    // Apply theme
+    const root = document.documentElement;
+    if (theme === "system") {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      root.classList.toggle("dark", prefersDark);
+    } else {
+      root.classList.toggle("dark", theme === "dark");
+    }
+    localStorage.setItem("demo1-theme", theme);
+  }, [theme]);
+
+  const copyToClipboard = useCallback(async (text: string, id: string) => {
+    try {
+      if (document.hasFocus() && navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopiedCode(id);
+      setTimeout(() => setCopiedCode(null), 2000);
+    } catch (error) {
+      console.warn("Failed to copy:", error);
+    }
+  }, []);
 
   return (
-    <div className="w-screen h-screen bg-slate-50 dark:bg-slate-900">
-      <Tldraw
-        onMount={(editor) => {
-          editorRef.current = editor;
-          
-          // 延迟创建输入框，确保 editor 完全初始化
-          setTimeout(() => {
-            // 创建初始输入框（居中）
-            const centerX = editor.getViewportPageBounds().center.x;
-            const centerY = editor.getViewportPageBounds().center.y;
-            
-            const inputShape = editor.createShape({
-              type: "text",
-              x: centerX - 150,
-              y: centerY - 20,
-              props: {
-                text: "输入痛点，如：找客户",
-                color: "black",
-                size: "m",
-                font: "draw",
-                align: "start",
-                w: 300,
-                autoSize: false,
-              },
-            });
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+      {/* Header */}
+      <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">{t.title}</h1>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t.subtitle}</p>
+            </div>
+            <div className="flex items-center gap-4">
+              {/* Theme Toggle */}
+              <div className="flex items-center gap-2 border rounded-lg p-1">
+                <Button
+                  variant={theme === "light" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setTheme("light")}
+                  className="h-8"
+                >
+                  <Sun className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={theme === "system" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setTheme("system")}
+                  className="h-8"
+                >
+                  <Monitor className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={theme === "dark" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setTheme("dark")}
+                  className="h-8"
+                >
+                  <Moon className="w-4 h-4" />
+                </Button>
+              </div>
+              {/* Language Toggle */}
+              <Button variant="outline" onClick={toggleLanguage}>
+                <Globe className="w-4 h-4 mr-2" />
+                {language === "zh" ? "English" : "中文"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            setInputShapeId(inputShape.id);
-            
-            // 选中输入框，使其可编辑
-            editor.setSelectedShapes([inputShape.id]);
-          }, 100);
-        }}
-        // 移除 persistenceKey 以避免 localStorage 错误
-        // 如果需要持久化，可以后续添加自定义存储适配器
-      >
-        <CanvasController
-          inputShapeId={inputShapeId}
-          loadingShapeId={loadingShapeId}
-          setLoadingShapeId={setLoadingShapeId}
-          isAnalyzing={isAnalyzing}
-          setIsAnalyzing={setIsAnalyzing}
-          analysisSteps={analysisSteps}
-          setAnalysisSteps={setAnalysisSteps}
-        />
-      </Tldraw>
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8">
+        <Tabs defaultValue="icons" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
+            <TabsTrigger value="icons" className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              {t.tabIcons}
+            </TabsTrigger>
+            <TabsTrigger value="themes" className="flex items-center gap-2">
+              <Palette className="w-4 h-4" />
+              {t.tabThemes}
+            </TabsTrigger>
+            <TabsTrigger value="components" className="flex items-center gap-2">
+              <Code className="w-4 h-4" />
+              {t.tabComponents}
+            </TabsTrigger>
+            <TabsTrigger value="usage" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              {t.tabUsage}
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Icons Tab */}
+          <TabsContent value="icons" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5" />
+                      {t.iconLibraries}
+                    </CardTitle>
+                    <CardDescription>{t.lucideDesc}</CardDescription>
+                  </div>
+                  <Badge variant="default" className="bg-green-500">
+                    {t.recommended}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Library Info */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t.iconLibrary}</div>
+                    <div className="text-lg font-semibold">{t.lucideTitle}</div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t.iconCount}</div>
+                    <div className="text-lg font-semibold">1500+</div>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <div className="text-sm text-slate-500 dark:text-slate-400 mb-1">{t.license}</div>
+                    <div className="text-lg font-semibold">ISC</div>
+                  </div>
+                </div>
+
+                {/* Features */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <h3 className="font-semibold mb-2">{t.lucideFeatures}</h3>
+                  <pre className="text-sm whitespace-pre-wrap">{t.lucideFeatures}</pre>
+                </div>
+
+                {/* Icon Showcase */}
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold">图标展示 / Icon Showcase</h3>
+                  
+                  {Object.entries(iconCategories).map(([category, icons]) => (
+                    <div key={category} className="space-y-3">
+                      <h4 className="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase">
+                        {category}
+                      </h4>
+                      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-4">
+                        {icons.map(({ name, icon: Icon }) => (
+                          <div
+                            key={name}
+                            className="flex flex-col items-center justify-center p-4 border rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                          >
+                            <Icon className="w-6 h-6 mb-2" />
+                            <span className="text-xs text-center text-slate-600 dark:text-slate-400">
+                              {name}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Code Example */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">{t.lucideExample}</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(
+                        `import { Home, User, Settings } from "lucide-react";
+
+function MyComponent() {
+  return (
+    <div>
+      <Home className="w-5 h-5" />
+      <User className="w-5 h-5 text-blue-500" />
+      <Settings className="w-5 h-5" />
     </div>
   );
-}
+}`,
+                        "lucide-example"
+                      )}
+                    >
+                      {copiedCode === "lucide-example" ? (
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                      ) : (
+                        <Copy className="w-4 h-4 mr-2" />
+                      )}
+                      {copiedCode === "lucide-example" ? t.copied : t.copyCode}
+                    </Button>
+                  </div>
+                  <pre className="p-4 bg-slate-900 dark:bg-slate-950 text-slate-100 rounded-lg text-sm overflow-x-auto">
+                    <code>{`import { Home, User, Settings } from "lucide-react";
 
-// 画布控制器组件
-function CanvasController({
-  inputShapeId,
-  loadingShapeId,
-  setLoadingShapeId,
-  isAnalyzing,
-  setIsAnalyzing,
-  analysisSteps,
-  setAnalysisSteps,
-}: {
-  inputShapeId: TLShapeId | null;
-  loadingShapeId: TLShapeId | null;
-  setLoadingShapeId: (id: TLShapeId | null) => void;
-  isAnalyzing: boolean;
-  setIsAnalyzing: (value: boolean) => void;
-  analysisSteps: AnalysisStep[];
-  setAnalysisSteps: (steps: AnalysisStep[]) => void;
-}) {
-  const editor = useEditor();
-  const inputTextRef = useRef<string>("");
-  const animationFrameRef = useRef<number | null>(null);
+function MyComponent() {
+  return (
+    <div>
+      <Home className="w-5 h-5" />
+      <User className="w-5 h-5 text-blue-500" />
+      <Settings className="w-5 h-5" />
+    </div>
+  );
+}`}</code>
+                  </pre>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-  // 监听输入框文本变化
-  useEffect(() => {
-    if (!inputShapeId) return;
+          {/* Themes Tab */}
+          <TabsContent value="themes" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="w-5 h-5" />
+                  {t.themeLibraries}
+                </CardTitle>
+                <CardDescription>{t.themeDescription}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* shadcn/ui Theme */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">{t.shadcnTitle}</h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{t.shadcnDesc}</p>
+                    </div>
+                    <Badge>{t.recommended}</Badge>
+                  </div>
 
-    const unsubscribe = editor.store.listen(() => {
-      const shape = editor.getShape(inputShapeId);
-      if (shape && shape.type === "text") {
-        const text = (shape as any).props.text || "";
-        const placeholder = "输入痛点，如：找客户";
-        
-        // 如果文本不是占位符，更新宽度
-        if (text !== placeholder && text !== inputTextRef.current) {
-          inputTextRef.current = text;
-          
-          // 根据文本长度动态调整宽度（呼吸感）
-          const textLength = text.length;
-          const minWidth = 300;
-          const maxWidth = 600;
-          const newWidth = Math.min(maxWidth, Math.max(minWidth, textLength * 12 + 50));
-          
-          editor.updateShape({
-            id: inputShapeId,
-            type: "text",
-            props: {
-              ...shape.props,
-              w: newWidth,
-            },
-          });
-        }
-      }
-    });
+                  <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                    <h4 className="font-semibold mb-2">{t.shadcnFeatures}</h4>
+                    <pre className="text-sm whitespace-pre-wrap">{t.shadcnFeatures}</pre>
+                  </div>
 
-    return unsubscribe;
-  }, [editor, inputShapeId]);
+                  {/* Theme Preview */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-6 border rounded-lg bg-white dark:bg-slate-800">
+                      <h4 className="font-semibold mb-4">浅色主题 / Light Theme</h4>
+                      <div className="space-y-2">
+                        <div className="h-10 bg-primary rounded flex items-center justify-center text-primary-foreground">
+                          Primary
+                        </div>
+                        <div className="h-10 bg-secondary rounded flex items-center justify-center text-secondary-foreground">
+                          Secondary
+                        </div>
+                        <div className="h-10 border rounded flex items-center justify-center">
+                          Outline
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-6 border rounded-lg bg-slate-900 dark:bg-slate-950">
+                      <h4 className="font-semibold mb-4 text-slate-100">深色主题 / Dark Theme</h4>
+                      <div className="space-y-2">
+                        <div className="h-10 bg-primary rounded flex items-center justify-center text-primary-foreground">
+                          Primary
+                        </div>
+                        <div className="h-10 bg-secondary rounded flex items-center justify-center text-secondary-foreground">
+                          Secondary
+                        </div>
+                        <div className="h-10 border border-slate-700 rounded flex items-center justify-center text-slate-100">
+                          Outline
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-  // 监听回车键提交
-  useEffect(() => {
-    if (!inputShapeId || isAnalyzing) return;
+          {/* Components Tab */}
+          <TabsContent value="components" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Code className="w-5 h-5" />
+                  {t.uiComponents}
+                </CardTitle>
+                <CardDescription>{t.componentShowcase}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Buttons */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">按钮 / Buttons</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <Button>Default</Button>
+                    <Button variant="secondary">Secondary</Button>
+                    <Button variant="outline">Outline</Button>
+                    <Button variant="ghost">Ghost</Button>
+                    <Button variant="destructive">Destructive</Button>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <Button size="sm">Small</Button>
+                    <Button size="default">Default</Button>
+                    <Button size="lg">Large</Button>
+                  </div>
+                </div>
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        const selectedShapes = editor.getSelectedShapeIds();
-        if (selectedShapes.includes(inputShapeId)) {
-          const shape = editor.getShape(inputShapeId);
-          if (shape && shape.type === "text") {
-            const text = (shape as any).props.text || "";
-            const placeholder = "输入痛点，如：找客户";
-            
-            if (text && text !== placeholder) {
-              e.preventDefault();
-              handleSubmit(text);
-            }
-          }
-        }
-      }
-    };
+                {/* Badges */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">徽章 / Badges</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <Badge>Default</Badge>
+                    <Badge variant="secondary">Secondary</Badge>
+                    <Badge variant="outline">Outline</Badge>
+                    <Badge variant="destructive">Destructive</Badge>
+                  </div>
+                </div>
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [editor, inputShapeId, isAnalyzing, handleSubmit]);
+                {/* Cards */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">卡片 / Cards</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Card Title</CardTitle>
+                        <CardDescription>Card description goes here</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <p>Card content with some text and information.</p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Another Card</CardTitle>
+                        <CardDescription>With different content</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <p>You can put any content here.</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-  // 提交处理
-  const handleSubmit = useCallback(async (text: string) => {
-    if (!inputShapeId || isAnalyzing) return;
+          {/* Usage Tab */}
+          <TabsContent value="usage" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  {t.gettingStarted}
+                </CardTitle>
+                <CardDescription>{t.installationSteps}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Installation Steps */}
+                <div className="space-y-4">
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                      1
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold mb-2">{t.step1}</h4>
+                      <pre className="p-3 bg-slate-900 dark:bg-slate-950 text-slate-100 rounded text-sm">
+                        <code>bun add lucide-react</code>
+                      </pre>
+                    </div>
+                  </div>
 
-    setIsAnalyzing(true);
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                      2
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold mb-2">{t.step2}</h4>
+                      <pre className="p-3 bg-slate-900 dark:bg-slate-950 text-slate-100 rounded text-sm">
+                        <code>{`import { Home, User } from "lucide-react";`}</code>
+                      </pre>
+                    </div>
+                  </div>
 
-    // 1. 输入框变灰
-    const inputShape = editor.getShape(inputShapeId);
-    if (inputShape) {
-      editor.updateShape({
-        id: inputShapeId,
-        type: "text",
-        props: {
-          ...inputShape.props,
-          color: "grey",
-        },
-      });
-    }
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                      3
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold mb-2">{t.step3}</h4>
+                      <pre className="p-3 bg-slate-900 dark:bg-slate-950 text-slate-100 rounded text-sm">
+                        <code>{`<Home className="w-5 h-5" />`}</code>
+                      </pre>
+                    </div>
+                  </div>
 
-    // 2. 创建 loading 圆形（在输入框下方）
-    const inputBounds = editor.getShapePageBounds(inputShapeId);
-    let analysisData: any = null;
-    let currentLoadingId: TLShapeId | null = null;
-    
-    if (inputBounds) {
-      const loadingShape = editor.createShape({
-        type: "geo",
-        x: inputBounds.center.x - 30,
-        y: inputBounds.maxY + 40,
-        props: {
-          geo: "ellipse",
-          w: 60,
-          h: 60,
-          fill: "semi",
-          color: "blue",
-        },
-      });
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-semibold">
+                      4
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold mb-2">{t.step4}</h4>
+                      <pre className="p-3 bg-slate-900 dark:bg-slate-950 text-slate-100 rounded text-sm">
+                        <code>{`<Home className="w-5 h-5 text-blue-500" />`}</code>
+                      </pre>
+                    </div>
+                  </div>
+                </div>
 
-      currentLoadingId = loadingShape.id;
-      setLoadingShapeId(loadingShape.id);
+                {/* Complete Example */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">{t.codeExample}</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(
+                        `import { Button } from "@/components/ui/button";
+import { Home, User, Settings } from "lucide-react";
 
-      // 3. 开始分析
-      try {
-        const analysisPrompt = `Analyze the user's pain point: "${text.trim()}". Break it down into 3-5 tools/solutions. Output JSON format: {"steps": [{"step": 1, "desc": "分析获客痛点", "tool": "LeadsBot"}, {"step": 2, "desc": "需要CRM管理", "tool": "CRM"}], "tools": [{"name": "LeadsBot", "type": "bot", "priority": 1}]}. Output ONLY valid JSON, no markdown.`;
+export function MyComponent() {
+  return (
+    <div className="flex gap-2">
+      <Button>
+        <Home className="w-4 h-4 mr-2" />
+        Home
+      </Button>
+      <Button variant="outline">
+        <User className="w-4 h-4 mr-2" />
+        Profile
+      </Button>
+      <Button variant="ghost">
+        <Settings className="w-4 h-4 mr-2" />
+        Settings
+      </Button>
+    </div>
+  );
+}`,
+                        "complete-example"
+                      )}
+                    >
+                      {copiedCode === "complete-example" ? (
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                      ) : (
+                        <Copy className="w-4 h-4 mr-2" />
+                      )}
+                      {copiedCode === "complete-example" ? t.copied : t.copyCode}
+                    </Button>
+                  </div>
+                  <pre className="p-4 bg-slate-900 dark:bg-slate-950 text-slate-100 rounded-lg text-sm overflow-x-auto">
+                    <code>{`import { Button } from "@/components/ui/button";
+import { Home, User, Settings } from "lucide-react";
 
-        const response = await modelManager.query(analysisPrompt);
+export function MyComponent() {
+  return (
+    <div className="flex gap-2">
+      <Button>
+        <Home className="w-4 h-4 mr-2" />
+        Home
+      </Button>
+      <Button variant="outline">
+        <User className="w-4 h-4 mr-2" />
+        Profile
+      </Button>
+      <Button variant="ghost">
+        <Settings className="w-4 h-4 mr-2" />
+        Settings
+      </Button>
+    </div>
+  );
+}`}</code>
+                  </pre>
+                </div>
 
-        // 解析分析结果
-        const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          analysisData = JSON.parse(jsonMatch[0]);
-          
-          // 流式显示分析步骤（在右侧）
-          if (analysisData.steps && Array.isArray(analysisData.steps)) {
-            const viewport = editor.getViewportPageBounds();
-            const rightX = viewport.maxX - 300;
-            const startY = viewport.center.y - 150;
-
-            analysisData.steps.forEach((step: any, index: number) => {
-              setTimeout(() => {
-                const x = rightX;
-                const y = startY + index * 130;
-
-                // 创建步骤框
-                const stepShape = editor.createShape({
-                  type: "geo",
-                  x,
-                  y,
-                  props: {
-                    geo: "rectangle",
-                    w: 280,
-                    h: 110,
-                    fill: "semi",
-                    color: "blue",
-                    text: `${step.step}. ${step.desc}\n${step.tool ? `工具: ${step.tool}` : ""}`,
-                  },
-                });
-
-                // 创建连接线（从输入框到步骤框）
-                editor.createShape({
-                  type: "arrow",
-                  x: inputBounds.center.x,
-                  y: inputBounds.center.y,
-                  props: {
-                    start: { x: 0, y: 0 },
-                    end: { x: x - inputBounds.center.x, y: y - inputBounds.center.y },
-                    arrowheadStart: "none",
-                    arrowheadEnd: "arrow",
-                    color: "blue",
-                    size: "m",
-                  },
-                });
-
-                setAnalysisSteps(prev => [...prev, {
-                  id: stepShape.id,
-                  text: `${step.step}. ${step.desc}`,
-                  tool: step.tool,
-                  x,
-                  y,
-                }]);
-              }, index * 800); // 流式显示，每个间隔 800ms
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Analysis error:", error);
-      } finally {
-        // 延迟移除 loading（等所有步骤显示完）
-        const delay = analysisData?.steps?.length ? analysisData.steps.length * 800 + 1000 : 2000;
-        setTimeout(() => {
-          if (currentLoadingId) {
-            const currentLoading = editor.getShape(currentLoadingId);
-            if (currentLoading) {
-              editor.deleteShape(currentLoadingId);
-            }
-            setLoadingShapeId(null);
-          }
-          setIsAnalyzing(false);
-        }, delay);
-      }
-    }
-  }, [editor, inputShapeId, isAnalyzing, setLoadingShapeId, setIsAnalyzing, setAnalysisSteps]);
-
-  // Loading 呼吸动画
-  useEffect(() => {
-    if (!loadingShapeId || !isAnalyzing) {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      return;
-    }
-
-    let frame = 0;
-    const animate = () => {
-      if (!isAnalyzing || !loadingShapeId) return;
-      
-      frame++;
-      // 呼吸效果：使用 sin 函数创建平滑的缩放动画
-      const scale = 1 + Math.sin(frame * 0.08) * 0.15;
-      
-      const shape = editor.getShape(loadingShapeId);
-      if (shape) {
-        editor.updateShape({
-          id: loadingShapeId,
-          type: "geo",
-          props: {
-            ...shape.props,
-            w: 60 * scale,
-            h: 60 * scale,
-          },
-        });
-      }
-
-      animationFrameRef.current = requestAnimationFrame(animate);
-    };
-
-    animationFrameRef.current = requestAnimationFrame(animate);
-    
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [editor, loadingShapeId, isAnalyzing]);
-
-  // 点击步骤框的处理（预留）
-  useEffect(() => {
-    if (analysisSteps.length === 0) return;
-
-    const handleShapeClick = (e: any) => {
-      const clickedShapeId = e.target;
-      const step = analysisSteps.find(s => s.id === clickedShapeId);
-      
-      if (step) {
-        // TODO: 触发下一个生成过程
-        console.log("Clicked step:", step);
-      }
-    };
-
-    // 订阅点击事件
-    const unsubscribe = editor.store.listen(() => {
-      // 这里可以添加点击处理逻辑
-    });
-
-    return unsubscribe;
-  }, [editor, analysisSteps]);
-
-  return null;
+                {/* Resources */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold">{t.moreInfo}</h3>
+                  <div className="flex flex-wrap gap-3">
+                    <Button variant="outline" asChild>
+                      <a href="https://lucide.dev" target="_blank" rel="noopener noreferrer">
+                        <Globe className="w-4 h-4 mr-2" />
+                        Lucide Icons Docs
+                      </a>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <a href="https://ui.shadcn.com" target="_blank" rel="noopener noreferrer">
+                        <Github className="w-4 h-4 mr-2" />
+                        shadcn/ui Docs
+                      </a>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <a href="https://tailwindcss.com" target="_blank" rel="noopener noreferrer">
+                        <Package className="w-4 h-4 mr-2" />
+                        Tailwind CSS Docs
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
 }
 
 export default Demo1;

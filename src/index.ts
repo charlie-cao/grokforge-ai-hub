@@ -40,6 +40,32 @@ const server = serve({
         message: `Hello, ${name}!`,
       });
     },
+
+    // Demo2 API routes - Bun SQLite + Drizzle ORM
+    "/api/demo2/users": {
+      GET: async () => {
+        const { getUsers } = await import("./server/demo2-api");
+        return getUsers();
+      },
+      POST: async (req) => {
+        const { createUser } = await import("./server/demo2-api");
+        return createUser(req);
+      },
+    },
+    "/api/demo2/users/:id": {
+      GET: async (req) => {
+        const { getUser } = await import("./server/demo2-api");
+        return getUser(req.params.id);
+      },
+      PUT: async (req) => {
+        const { updateUser } = await import("./server/demo2-api");
+        return updateUser(req.params.id, req);
+      },
+      DELETE: async (req) => {
+        const { deleteUser } = await import("./server/demo2-api");
+        return deleteUser(req.params.id);
+      },
+    },
   },
 
   development: process.env.NODE_ENV !== "production" && {

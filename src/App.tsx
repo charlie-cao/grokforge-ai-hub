@@ -254,8 +254,26 @@ export function App() {
       const prompt = await generatePromptFromPain(painPoint.trim());
       setGeneratedPrompt(prompt);
       
-      // Copy to clipboard
+      // Copy to clipboard (with error handling and focus check)
+      try {
+        // Check if document has focus and clipboard API is available
+        if (document.hasFocus() && navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(prompt);
+        } else {
+          // Fallback: use a temporary textarea element
+          const textarea = document.createElement("textarea");
+          textarea.value = prompt;
+          textarea.style.position = "fixed";
+          textarea.style.opacity = "0";
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand("copy");
+          document.body.removeChild(textarea);
+        }
+      } catch (clipboardError) {
+        console.warn("Clipboard copy failed, prompt is still available:", clipboardError);
+        // Continue - the prompt is still available in the UI
+      }
     } catch (error) {
       console.error("Prompt generation error:", error);
       setGeneratedPrompt("Error generating prompt. Please try again.");

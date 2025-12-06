@@ -1,567 +1,462 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { ReactFlow, Node, Edge, applyNodeChanges, NodeChange, Connection, addEdge, Background, Controls, MiniMap, Handle, Position } from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import { modelManager } from "../lib/models";
+import { useState, useEffect, useCallback } from "react";
+import { Button } from "../components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Badge } from "../components/ui/badge";
+import { useDemo2Translations, type Language } from "../lib/demo2-i18n";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Globe,
+  Database,
+  Copy,
+  CheckCircle2,
+  Loader2,
+} from "lucide-react";
 import "../index.css";
 
-// 自定义输入节点 - 简化版，无边框，可内联编辑
-const InputNode = ({ data, selected }: { data: { text: string; isDisabled: boolean; onTextChange: (text: string) => void; onSubmit: () => void }; selected?: boolean }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [localText, setLocalText] = useState(data.text);
-  const inputRef = useRef<HTMLInputElement>(null);
+// API 基础 URL
+const API_BASE = "/api/demo2";
 
-  useEffect(() => {
-    setLocalText(data.text);
-  }, [data.text]);
+// User 类型定义
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  age: number | null;
+  role: string;
+  createdAt: number;
+  updatedAt: number;
+}
 
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isEditing]);
-
-  const handleClick = () => {
-    if (!data.isDisabled && !isEditing) {
-      setIsEditing(true);
-    }
-  };
-
-  const handleBlur = () => {
-    setIsEditing(false);
-    data.onTextChange(localText);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsEditing(false);
-      data.onTextChange(localText);
-      if (localText.trim()) {
-        // 使用 setTimeout 确保状态更新后再提交
-        setTimeout(() => {
-          data.onSubmit();
-        }, 0);
-      }
-    }
-    if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsEditing(false);
-      setLocalText(data.text);
-    }
-  };
-
-  return (
-    <div 
-      className={`px-4 py-3 rounded-lg ${data.isDisabled ? 'bg-slate-200' : 'bg-white'} shadow-md transition-all duration-300 cursor-text min-w-[200px]`}
-      onClick={handleClick}
-    >
-      {isEditing ? (
-        <input
-          ref={inputRef}
-          type="text"
-          value={localText}
-          onChange={(e) => setLocalText(e.target.value)}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          className="w-full text-sm text-slate-700 bg-transparent border-none outline-none"
-          placeholder="输入痛点，如：找客户"
-        />
-      ) : (
-        <div className="text-sm text-slate-700 whitespace-pre-wrap">
-          {data.text || "输入痛点，如：找客户"}
-        </div>
-      )}
-      {isEditing && localText.trim() && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsEditing(false);
-            data.onTextChange(localText);
-            data.onSubmit();
-          }}
-          className="mt-2 bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1 rounded-md transition-colors"
-        >
-          提交
-        </button>
-      )}
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3" />
-    </div>
-  );
-};
-
-// 思考中节点 - 带连接线，显示分析过程
-const ThinkingNode = ({ data }: { data: { process: string; isExpanded: boolean; onToggle: () => void } }) => {
-  const [scale, setScale] = useState(1);
-
-  useEffect(() => {
-    let frame = 0;
-    const animate = () => {
-      frame++;
-      const newScale = 1 + Math.sin(frame * 0.08) * 0.15;
-      setScale(newScale);
-      requestAnimationFrame(animate);
-    };
-    const id = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(id);
-  }, []);
-
-  return (
-    <div className="relative">
-      <div 
-        className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center shadow-lg cursor-pointer"
-        style={{ transform: `scale(${scale})` }}
-        onClick={data.onToggle}
-      >
-        <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-      </div>
-      <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs text-blue-600 font-medium whitespace-nowrap">
-        思考中
-      </div>
-      {data.isExpanded && (
-        <div className="absolute top-20 left-1/2 transform -translate-x-1/2 w-64 bg-white dark:bg-slate-800 rounded-lg shadow-xl border-2 border-blue-500 p-4 z-10">
-          <div className="text-sm font-semibold text-blue-600 mb-2">分析过程</div>
-          <div className="text-xs text-slate-600 dark:text-slate-400 whitespace-pre-wrap max-h-48 overflow-y-auto">
-            {data.process || "正在分析..."}
-          </div>
-        </div>
-      )}
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3" />
-      <Handle type="target" position={Position.Top} className="w-3 h-3" />
-    </div>
-  );
-};
-
-// 步骤节点 - 可点击生成
-const StepNode = ({ data, selected }: { data: { step: number; desc: string; tool?: string; isGenerating: boolean; onGenerate: () => void }; selected?: boolean }) => {
-  return (
-    <div 
-      className={`px-4 py-3 rounded-lg border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg min-w-[280px] cursor-pointer transition-all hover:shadow-xl ${selected ? 'ring-2 ring-blue-400' : ''}`}
-      onClick={data.onGenerate}
-    >
-      <div className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-1">
-        {data.step}. {data.desc}
-      </div>
-      {data.tool && (
-        <div className="text-xs text-slate-600 dark:text-slate-400">
-          工具: {data.tool}
-        </div>
-      )}
-      {data.isGenerating && (
-        <div className="mt-2 text-xs text-blue-500 flex items-center gap-2">
-          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          制作中...
-        </div>
-      )}
-      <Handle type="source" position={Position.Right} className="w-3 h-3" />
-      <Handle type="target" position={Position.Left} className="w-3 h-3" />
-    </div>
-  );
-};
-
-// 结果节点 - 显示生成结果，可折叠
-const ResultNode = ({ data }: { data: { content: string; isExpanded: boolean; onToggle: () => void } }) => {
-  return (
-    <div className="relative">
-      <div 
-        className="px-4 py-3 rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-900/20 shadow-lg min-w-[320px] max-w-[480px] cursor-pointer"
-        onClick={data.onToggle}
-      >
-        <div className="text-sm font-semibold text-green-600 dark:text-green-400 mb-2">
-          生成结果 {data.isExpanded ? "▼" : "▶"}
-        </div>
-        {data.isExpanded && (
-          <div className="text-xs text-slate-700 dark:text-slate-300 whitespace-pre-wrap max-h-96 overflow-y-auto bg-white dark:bg-slate-900 p-3 rounded border border-slate-200 dark:border-slate-700">
-            {data.content || "暂无内容"}
-          </div>
-        )}
-      </div>
-      <Handle type="target" position={Position.Left} className="w-3 h-3" />
-    </div>
-  );
-};
-
-const nodeTypes = {
-  input: InputNode,
-  thinking: ThinkingNode,
-  step: StepNode,
-  result: ResultNode,
-};
+interface UserFormData {
+  name: string;
+  email: string;
+  age: string;
+  role: string;
+}
 
 export function Demo2() {
-  const [nodes, setNodes] = useState<Node[]>([]);
-  const [edges, setEdges] = useState<Edge[]>([]);
-  const [inputText, setInputText] = useState("");
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [thinkingProcess, setThinkingProcess] = useState("");
-  const [isThinkingExpanded, setIsThinkingExpanded] = useState(false);
-  const inputNodeId = "input-node";
-  const thinkingNodeId = "thinking-node";
-  const reactFlowInstance = useRef<any>(null);
+  const [language, setLanguage] = useState<Language>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("demo2-language");
+      return (saved === "en" ? "en" : "zh") as Language;
+    }
+    return "zh";
+  });
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [formData, setFormData] = useState<UserFormData>({
+    name: "",
+    email: "",
+    age: "",
+    role: "user",
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
-  // 提交处理
-  const handleSubmit = useCallback(async () => {
-    // 从当前节点状态获取最新的输入文本
-    setNodes((nds) => {
-      const inputNode = nds.find((n) => n.id === inputNodeId);
-      const currentText = inputNode?.data?.text || inputText || "";
-      
-      if (!currentText.trim() || isAnalyzing) return nds;
+  const t = useDemo2Translations(language);
 
-      setIsAnalyzing(true);
-      setThinkingProcess("");
+  const toggleLanguage = useCallback(() => {
+    const newLang = language === "zh" ? "en" : "zh";
+    setLanguage(newLang);
+    localStorage.setItem("demo2-language", newLang);
+  }, [language]);
 
-      // 1. 输入框变灰
-      const updatedNodes = nds.map((node) => {
-        if (node.id === inputNodeId) {
-          return {
-            ...node,
-            data: { ...node.data, text: currentText, isDisabled: true },
-          };
-        }
-        return node;
-      });
-
-      // 2. 检查是否已存在思考节点和旧的连接线，如果存在则先删除
-      const filteredNodes = updatedNodes.filter((n) => n.id !== thinkingNodeId);
-      setEdges((eds) => eds.filter((e) => !(e.source === inputNodeId && e.target === thinkingNodeId)));
-
-      // 3. 创建思考节点（在输入框下方）
-      const inputNode = filteredNodes.find((n) => n.id === inputNodeId);
-      if (!inputNode) return filteredNodes;
-
-      const thinkingNode: Node = {
-        id: thinkingNodeId,
-        type: "thinking",
-        position: { 
-          x: inputNode.position.x + ((inputNode.style?.width as number) || 200) / 2 - 32, 
-          y: inputNode.position.y + 100 
-        },
-        data: {
-          process: "",
-          isExpanded: false,
-          onToggle: () => setIsThinkingExpanded((prev) => !prev),
-        },
-        draggable: false,
-      };
-
-      // 4. 创建从输入到思考的连接线（使用唯一 ID）
-      const edgeId = `edge-${inputNodeId}-${thinkingNodeId}-${Date.now()}`;
-      const edge: Edge = {
-        id: edgeId,
-        source: inputNodeId,
-        target: thinkingNodeId,
-        type: "smoothstep",
-        animated: true,
-        style: { stroke: "#3b82f6", strokeWidth: 2 },
-      };
-
-      setEdges((eds) => [...eds, edge]);
-
-      // 5. 开始分析（异步执行）
-      (async () => {
-        try {
-          const analysisPrompt = `Analyze the user's pain point: "${currentText.trim()}". Break it down into 3-5 tools/solutions. Output JSON format: {"steps": [{"step": 1, "desc": "分析获客痛点", "tool": "LeadsBot"}, {"step": 2, "desc": "需要CRM管理", "tool": "CRM"}], "tools": [{"name": "LeadsBot", "type": "bot", "priority": 1}]}. Output ONLY valid JSON, no markdown.`;
-
-          // 模拟流式显示分析过程
-          const processSteps = [
-            "正在分析用户痛点...",
-            "识别核心需求...",
-            "匹配解决方案...",
-            "生成工具建议...",
-          ];
-
-          let currentProcess = "";
-          processSteps.forEach((step, index) => {
-            setTimeout(() => {
-              currentProcess += step + "\n";
-              setThinkingProcess(currentProcess);
-              setNodes((nds) =>
-                nds.map((node) => {
-                  if (node.id === thinkingNodeId) {
-                    return {
-                      ...node,
-                      data: {
-                        ...node.data,
-                        process: currentProcess,
-                      },
-                    };
-                  }
-                  return node;
-                })
-              );
-            }, index * 500);
-          });
-
-          const response = await modelManager.query(analysisPrompt);
-
-          // 解析分析结果
-          const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const analysisData = JSON.parse(jsonMatch[0]);
-
-            // 完成分析过程
-            setTimeout(() => {
-              currentProcess += "分析完成！\n";
-              setThinkingProcess(currentProcess);
-              setNodes((nds) =>
-                nds.map((node) => {
-                  if (node.id === thinkingNodeId) {
-                    return {
-                      ...node,
-                      data: {
-                        ...node.data,
-                        process: currentProcess,
-                      },
-                    };
-                  }
-                  return node;
-                })
-              );
-
-              // 延迟折叠思考节点，然后显示步骤
-              setTimeout(() => {
-                setIsThinkingExpanded(false);
-                
-                // 流式显示分析步骤（在右侧）
-                if (analysisData.steps && Array.isArray(analysisData.steps)) {
-                  const rightX = 800;
-                  const startY = 200;
-
-                  analysisData.steps.forEach((step: any, index: number) => {
-                    setTimeout(() => {
-                      const stepNodeId = `step-${index}-${Date.now()}`;
-                      const y = startY + index * 130;
-
-                      // 创建步骤节点
-                      const stepNode: Node = {
-                        id: stepNodeId,
-                        type: "step",
-                        position: { x: rightX, y },
-                        data: {
-                          step: step.step,
-                          desc: step.desc,
-                          tool: step.tool,
-                          isGenerating: false,
-                          onGenerate: () => handleStepGenerate(stepNodeId, step),
-                        },
-                        draggable: false,
-                      };
-
-                      // 创建从思考节点到步骤的连接线（使用唯一 ID）
-                      const stepEdge: Edge = {
-                        id: `edge-${thinkingNodeId}-${stepNodeId}-${Date.now()}`,
-                        source: thinkingNodeId,
-                        target: stepNodeId,
-                        type: "smoothstep",
-                        animated: true,
-                        style: { stroke: "#3b82f6", strokeWidth: 2 },
-                      };
-
-                      setNodes((nds) => [...nds, stepNode]);
-                      setEdges((eds) => [...eds, stepEdge]);
-                    }, index * 600);
-                  });
-
-                  // 延迟移除思考节点
-                  setTimeout(() => {
-                    setNodes((nds) => nds.filter((n) => n.id !== thinkingNodeId));
-                    setEdges((eds) => eds.filter((e) => e.source !== thinkingNodeId && e.target !== thinkingNodeId));
-                    setIsAnalyzing(false);
-                  }, analysisData.steps.length * 600 + 1000);
-                }
-              }, 1000);
-            }, processSteps.length * 500 + 500);
-          }
-        } catch (error) {
-          console.error("Analysis error:", error);
-          setNodes((nds) => nds.filter((n) => n.id !== thinkingNodeId));
-          setEdges((eds) => eds.filter((e) => e.source !== thinkingNodeId && e.target !== thinkingNodeId));
-          setIsAnalyzing(false);
-        }
-      })();
-
-      return [...filteredNodes, thinkingNode];
-    });
-  }, [inputText, isAnalyzing, handleStepGenerate]);
-  }, [inputText, isAnalyzing]);
-
-  // 处理步骤生成
-  const handleStepGenerate = useCallback(async (stepNodeId: string, step: any) => {
-    // 标记为生成中
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id === stepNodeId) {
-          return {
-            ...node,
-            data: { ...node.data, isGenerating: true },
-          };
-        }
-        return node;
-      })
-    );
-
+  // 加载用户列表
+  const fetchUsers = useCallback(async () => {
     try {
-      // 生成内容
-      const generatePrompt = `Generate a solution for: ${step.desc}. Tool: ${step.tool || "N/A"}. Output a detailed implementation plan or code.`;
-      const response = await modelManager.query(generatePrompt);
-
-      // 创建结果节点（在步骤节点右侧）
-      setNodes((nds) => {
-        const stepNode = nds.find((n) => n.id === stepNodeId);
-        if (!stepNode) return nds;
-
-        const resultNodeId = `result-${stepNodeId}`;
-        const resultNode: Node = {
-          id: resultNodeId,
-          type: "result",
-          position: { x: stepNode.position.x + 350, y: stepNode.position.y },
-          data: {
-            content: response.content,
-            isExpanded: true,
-            onToggle: () => {
-              setNodes((nds) =>
-                nds.map((node) => {
-                  if (node.id === resultNodeId) {
-                    return {
-                      ...node,
-                      data: { ...node.data, isExpanded: !node.data.isExpanded },
-                    };
-                  }
-                  return node;
-                })
-              );
-            },
-          },
-          draggable: false,
-        };
-
-        // 创建从步骤到结果的连接线
-        const edge: Edge = {
-          id: `edge-${stepNodeId}-${resultNodeId}`,
-          source: stepNodeId,
-          target: resultNodeId,
-          type: "smoothstep",
-          animated: true,
-          style: { stroke: "#10b981", strokeWidth: 2 },
-        };
-
-        setEdges((eds) => [...eds, edge]);
-
-        return [...nds, resultNode];
-      });
-
-      // 延迟折叠结果节点
-      setTimeout(() => {
-        setNodes((nds) =>
-          nds.map((node) => {
-            if (node.id.startsWith(`result-${stepNodeId}`)) {
-              return {
-                ...node,
-                data: { ...node.data, isExpanded: false },
-              };
-            }
-            return node;
-          })
-        );
-      }, 3000);
-
-      // 取消生成中状态
-      setNodes((nds) =>
-        nds.map((node) => {
-          if (node.id === stepNodeId) {
-            return {
-              ...node,
-              data: { ...node.data, isGenerating: false },
-            };
-          }
-          return node;
-        })
-      );
+      setLoading(true);
+      const response = await fetch(`${API_BASE}/users`);
+      const result = await response.json();
+      if (result.success) {
+        setUsers(result.data);
+      }
     } catch (error) {
-      console.error("Generate error:", error);
-      setNodes((nds) =>
-        nds.map((node) => {
-          if (node.id === stepNodeId) {
-            return {
-              ...node,
-              data: { ...node.data, isGenerating: false },
-            };
-          }
-          return node;
-        })
-      );
+      console.error("Failed to fetch users:", error);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  // 初始化输入节点（居中）
   useEffect(() => {
-    const initialNode: Node = {
-      id: inputNodeId,
-      type: "input",
-      position: { x: 400, y: 300 },
-      data: { 
-        text: "输入痛点，如：找客户", 
-        isDisabled: false,
-        onTextChange: (text: string) => {
-          setInputText(text);
-          // 动态调整节点宽度
-          setNodes((nds) =>
-            nds.map((node) => {
-              if (node.id === inputNodeId) {
-                const textLength = text.length || 0;
-                const minWidth = 200;
-                const maxWidth = 500;
-                const newWidth = Math.min(maxWidth, Math.max(minWidth, textLength * 10 + 50));
-                return {
-                  ...node,
-                  style: { width: newWidth },
-                  data: { ...node.data, text },
-                };
-              }
-              return node;
-            })
-          );
-        },
-        onSubmit: handleSubmit,
-      },
-      draggable: false,
-    };
-    setNodes([initialNode]);
-  }, [handleSubmit]);
+    fetchUsers();
+  }, [fetchUsers]);
 
-  // 处理节点变化
-  const onNodesChange = useCallback(
-    (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
-    []
-  );
+  // 表单验证
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    if (!formData.name.trim()) {
+      errors.name = t.nameRequired;
+    }
+    
+    if (!formData.email.trim()) {
+      errors.email = t.emailRequired;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = t.emailInvalid;
+    }
+    
+    if (formData.age && isNaN(Number(formData.age))) {
+      errors.age = t.ageInvalid;
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
-  // 处理连接
-  const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
-    []
-  );
+  // 打开添加对话框
+  const handleAddClick = () => {
+    setEditingUser(null);
+    setFormData({ name: "", email: "", age: "", role: "user" });
+    setFormErrors({});
+    setIsDialogOpen(true);
+  };
+
+  // 打开编辑对话框
+  const handleEditClick = (user: User) => {
+    setEditingUser(user);
+    setFormData({
+      name: user.name,
+      email: user.email,
+      age: user.age?.toString() || "",
+      role: user.role,
+    });
+    setFormErrors({});
+    setIsDialogOpen(true);
+  };
+
+  // 保存用户（创建或更新）
+  const handleSave = async () => {
+    if (!validateForm()) return;
+
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        age: formData.age ? parseInt(formData.age) : null,
+        role: formData.role,
+      };
+
+      const url = editingUser
+        ? `${API_BASE}/users/${editingUser.id}`
+        : `${API_BASE}/users`;
+      const method = editingUser ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setIsDialogOpen(false);
+        await fetchUsers();
+        // 可以添加成功提示
+      } else {
+        setFormErrors({ email: result.error || t.errorOccurred });
+      }
+    } catch (error: any) {
+      setFormErrors({ email: error.message || t.errorOccurred });
+    }
+  };
+
+  // 删除用户
+  const handleDelete = async (user: User) => {
+    if (!confirm(t.confirmDelete)) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/users/${user.id}`, {
+        method: "DELETE",
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        await fetchUsers();
+      } else {
+        alert(result.error || t.errorOccurred);
+      }
+    } catch (error: any) {
+      alert(error.message || t.errorOccurred);
+    }
+  };
+
+  // 格式化日期
+  const formatDate = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString(language === "zh" ? "zh-CN" : "en-US");
+  };
+
+  // 复制代码
+  const copyToClipboard = async (text: string, id: string) => {
+    try {
+      if (document.hasFocus() && navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopiedCode(id);
+      setTimeout(() => setCopiedCode(null), 2000);
+    } catch (error) {
+      console.warn("Failed to copy:", error);
+    }
+  };
 
   return (
-    <div className="w-screen h-screen bg-slate-50 dark:bg-slate-900">
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onConnect={onConnect}
-        onInit={(instance) => {
-          reactFlowInstance.current = instance;
-          instance.fitView();
-        }}
-        nodeTypes={nodeTypes}
-        fitView
-        className="bg-slate-50 dark:bg-slate-900"
-      >
-        <Background />
-        <Controls />
-        <MiniMap />
-      </ReactFlow>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+      {/* Header */}
+      <div className="border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">{t.title}</h1>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t.subtitle}</p>
+            </div>
+            <Button variant="outline" onClick={toggleLanguage}>
+              <Globe className="w-4 h-4 mr-2" />
+              {language === "zh" ? "English" : "中文"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left Column - Features */}
+          <div className="lg:col-span-1 space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="w-5 h-5" />
+                  {t.features}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-sm">{t.feature1}</p>
+                <p className="text-sm">{t.feature2}</p>
+                <p className="text-sm">{t.feature3}</p>
+                <p className="text-sm">{t.feature4}</p>
+                <p className="text-sm">{t.feature5}</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t.databaseStatus}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <span className="text-sm">{t.databaseConnected}</span>
+                </div>
+                <div className="mt-4">
+                  <span className="text-sm text-slate-600 dark:text-slate-400">
+                    {t.totalUsers}:
+                  </span>
+                  <span className="ml-2 font-semibold">{users.length}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Column - User Table */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>用户管理 / User Management</CardTitle>
+                    <CardDescription>
+                      演示完整的 CRUD 操作 / Complete CRUD operations demo
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleAddClick}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    {t.addUser}
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                    <span className="ml-2 text-slate-600 dark:text-slate-400">{t.loading}</span>
+                  </div>
+                ) : users.length === 0 ? (
+                  <div className="text-center py-12 text-slate-600 dark:text-slate-400">
+                    {t.noUsers}
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t.name}</TableHead>
+                        <TableHead>{t.email}</TableHead>
+                        <TableHead>{t.age}</TableHead>
+                        <TableHead>{t.role}</TableHead>
+                        <TableHead>{t.createdAt}</TableHead>
+                        <TableHead className="text-right">{t.actions}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>{user.age ?? "-"}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{user.role}</Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-slate-600 dark:text-slate-400">
+                            {formatDate(user.createdAt)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditClick(user)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(user)}
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* Add/Edit Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {editingUser ? t.editUser : t.addUser}
+            </DialogTitle>
+            <DialogDescription>
+              {editingUser
+                ? "修改用户信息 / Update user information"
+                : "添加新用户 / Add a new user"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">{t.name}</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                placeholder={t.namePlaceholder}
+                aria-invalid={!!formErrors.name}
+              />
+              {formErrors.name && (
+                <p className="text-sm text-red-500">{formErrors.name}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">{t.email}</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                placeholder={t.emailPlaceholder}
+                aria-invalid={!!formErrors.email}
+              />
+              {formErrors.email && (
+                <p className="text-sm text-red-500">{formErrors.email}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="age">{t.age}</Label>
+              <Input
+                id="age"
+                type="number"
+                value={formData.age}
+                onChange={(e) =>
+                  setFormData({ ...formData, age: e.target.value })
+                }
+                placeholder={t.agePlaceholder}
+                aria-invalid={!!formErrors.age}
+              />
+              {formErrors.age && (
+                <p className="text-sm text-red-500">{formErrors.age}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">{t.role}</Label>
+              <select
+                id="role"
+                value={formData.role}
+                onChange={(e) =>
+                  setFormData({ ...formData, role: e.target.value })
+                }
+                className="flex h-9 w-full rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 dark:focus-visible:ring-slate-300"
+              >
+                <option value="user">{t.roleUser}</option>
+                <option value="admin">{t.roleAdmin}</option>
+                <option value="editor">{t.roleEditor}</option>
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              {t.cancel}
+            </Button>
+            <Button onClick={handleSave}>
+              {editingUser ? t.update : t.create}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -39,3 +39,7 @@ secrets.json
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# Demo2 database files
+data/demo2.db
+data/demo2.db-journal
