@@ -202,18 +202,32 @@ export class ModelManager {
 // Default model configuration
 // Supports environment variables for containerized deployments
 const getOllamaUrl = (): string => {
-  const host = process.env.OLLAMA_HOST || "localhost";
-  const port = process.env.OLLAMA_PORT || "11434";
-  const url = process.env.OLLAMA_URL;
-  if (url) return url;
-  return `http://${host}:${port}/api/generate`;
+  // Check if we're in a Node.js environment (server-side)
+  if (typeof process !== "undefined" && process.env) {
+    const host = process.env.OLLAMA_HOST || "localhost";
+    const port = process.env.OLLAMA_PORT || "11434";
+    const url = process.env.OLLAMA_URL;
+    if (url) return url;
+    return `http://${host}:${port}/api/generate`;
+  }
+  // Browser environment - use defaults
+  return "http://localhost:11434/api/generate";
+};
+
+const getOllamaModel = (): string => {
+  // Check if we're in a Node.js environment (server-side)
+  if (typeof process !== "undefined" && process.env) {
+    return process.env.OLLAMA_MODEL || "qwen3:latest";
+  }
+  // Browser environment - use default
+  return "qwen3:latest";
 };
 
 export const defaultModelConfig: ModelConfig = {
   name: "Qwen3",
   provider: "ollama",
   apiUrl: getOllamaUrl(),
-  model: process.env.OLLAMA_MODEL || "qwen3:latest",
+  model: getOllamaModel(),
 };
 
 // System prompts
