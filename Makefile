@@ -22,7 +22,7 @@ help: ## Show this help message
 
 run: ## Start all services (web, queue, scheduler, redis, ollama)
 	@echo "$(GREEN)🚀 Starting all services...$(NC)"
-	@docker-compose -f $(COMPOSE_FILE) up -d
+	@docker compose -f $(COMPOSE_FILE) up -d
 	@echo "$(GREEN)✅ All services started!$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Services:$(NC)"
@@ -36,7 +36,7 @@ run: ## Start all services (web, queue, scheduler, redis, ollama)
 run-local: ## Start services using local Ollama (no container, saves disk space)
 	@echo "$(GREEN)🚀 Starting services with local Ollama...$(NC)"
 	@echo "$(YELLOW)⚠️  Make sure Ollama is running locally on port 11434$(NC)"
-	@docker-compose -f $(COMPOSE_FILE) -f docker-compose.local-ollama.yml up -d
+	@docker compose -f $(COMPOSE_FILE) -f docker-compose.local-ollama.yml up -d
 	@echo "$(GREEN)✅ All services started!$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Services:$(NC)"
@@ -49,49 +49,49 @@ run-local: ## Start services using local Ollama (no container, saves disk space)
 
 stop: ## Stop all services
 	@echo "$(YELLOW)🛑 Stopping all services...$(NC)"
-	@docker-compose -f $(COMPOSE_FILE) stop
+	@docker compose -f $(COMPOSE_FILE) stop
 	@echo "$(GREEN)✅ All services stopped!$(NC)"
 
 down: ## Stop and remove all containers
 	@echo "$(YELLOW)🗑️  Stopping and removing all containers...$(NC)"
-	@docker-compose -f $(COMPOSE_FILE) down
+	@docker compose -f $(COMPOSE_FILE) down
 	@echo "$(GREEN)✅ All containers removed!$(NC)"
 
 logs: ## View logs from all services
-	@docker-compose -f $(COMPOSE_FILE) logs -f
+	@docker compose -f $(COMPOSE_FILE) logs -f
 
 logs-app: ## View logs from web server only
-	@docker-compose -f $(COMPOSE_FILE) logs -f app
+	@docker compose -f $(COMPOSE_FILE) logs -f app
 
 logs-queue: ## View logs from queue server only
-	@docker-compose -f $(COMPOSE_FILE) logs -f queue-server
+	@docker compose -f $(COMPOSE_FILE) logs -f queue-server
 
 logs-scheduler: ## View logs from scheduler server only
-	@docker-compose -f $(COMPOSE_FILE) logs -f scheduler-server
+	@docker compose -f $(COMPOSE_FILE) logs -f scheduler-server
 
 build: ## Build all Docker images
 	@echo "$(GREEN)🔨 Building Docker images...$(NC)"
-	@docker-compose -f $(COMPOSE_FILE) build
+	@docker compose -f $(COMPOSE_FILE) build
 	@echo "$(GREEN)✅ Build complete!$(NC)"
 
 rebuild: ## Rebuild all Docker images (no cache)
 	@echo "$(GREEN)🔨 Rebuilding Docker images (no cache)...$(NC)"
-	@docker-compose -f $(COMPOSE_FILE) build --no-cache
+	@docker compose -f $(COMPOSE_FILE) build --no-cache
 	@echo "$(GREEN)✅ Rebuild complete!$(NC)"
 
 restart: ## Restart all services
 	@echo "$(YELLOW)🔄 Restarting all services...$(NC)"
-	@docker-compose -f $(COMPOSE_FILE) restart
+	@docker compose -f $(COMPOSE_FILE) restart
 	@echo "$(GREEN)✅ All services restarted!$(NC)"
 
 status: ## Show status of all services
 	@echo "$(GREEN)📊 Service Status:$(NC)"
-	@docker-compose -f $(COMPOSE_FILE) ps
+	@docker compose -f $(COMPOSE_FILE) ps
 
 check: ## Check if all services are healthy
 	@echo "$(GREEN)🔍 Checking service health...$(NC)"
 	@echo ""
-	@docker-compose -f $(COMPOSE_FILE) ps
+	@docker compose -f $(COMPOSE_FILE) ps
 	@echo ""
 	@echo "$(YELLOW)Health Checks:$(NC)"
 	@echo -n "  Web Server:      "
@@ -105,33 +105,25 @@ check: ## Check if all services are healthy
 
 clean: ## Stop and remove all containers, volumes, and images
 	@echo "$(RED)⚠️  This will remove all containers, volumes, and images!$(NC)"
-	@read -p "Are you sure? [y/N] " -n 1 -r; \
-	echo; \
-	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		docker-compose -f $(COMPOSE_FILE) down -v --rmi all; \
-		echo "$(GREEN)✅ Cleanup complete!$(NC)"; \
-	else \
-		echo "$(YELLOW)Cancelled.$(NC)"; \
-	fi
+	@echo "$(YELLOW)Press Ctrl+C to cancel, or wait 5 seconds to continue...$(NC)"
+	@sleep 5 || timeout /t 5 /nobreak >nul 2>&1 || true
+	@docker compose -f $(COMPOSE_FILE) down -v --rmi all
+	@echo "$(GREEN)✅ Cleanup complete!$(NC)"
 
 clean-volumes: ## Remove all volumes (⚠️ This will delete all data!)
 	@echo "$(RED)⚠️  This will delete all volumes and data!$(NC)"
-	@read -p "Are you sure? [y/N] " -n 1 -r; \
-	echo; \
-	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
-		docker-compose -f $(COMPOSE_FILE) down -v; \
-		echo "$(GREEN)✅ Volumes removed!$(NC)"; \
-	else \
-		echo "$(YELLOW)Cancelled.$(NC)"; \
-	fi
+	@echo "$(YELLOW)Press Ctrl+C to cancel, or wait 5 seconds to continue...$(NC)"
+	@sleep 5 || timeout /t 5 /nobreak >nul 2>&1 || true
+	@docker compose -f $(COMPOSE_FILE) down -v
+	@echo "$(GREEN)✅ Volumes removed!$(NC)"
 
 shell-app: ## Open shell in web server container
-	@docker-compose -f $(COMPOSE_FILE) exec app sh
+	@docker compose -f $(COMPOSE_FILE) exec app sh
 
 shell-queue: ## Open shell in queue server container
-	@docker-compose -f $(COMPOSE_FILE) exec queue-server sh
+	@docker compose -f $(COMPOSE_FILE) exec queue-server sh
 
 shell-scheduler: ## Open shell in scheduler server container
-	@docker-compose -f $(COMPOSE_FILE) exec scheduler-server sh
+	@docker compose -f $(COMPOSE_FILE) exec scheduler-server sh
 
 

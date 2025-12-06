@@ -45,3 +45,8 @@ data/demo2.db
 data/demo2.db-journal
 data/demo7.db
 data/demo7.db-journal
+
+# Ollama models (large files, but keep directory structure)
+# Uncomment if you want to ignore model files:
+# data/ollama/**/*.bin
+# data/ollama/**/*.gguf

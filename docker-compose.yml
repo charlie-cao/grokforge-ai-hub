@@ -112,7 +112,8 @@ services:
     ports:
       - "${OLLAMA_PORT:-11434}:11434"
     volumes:
-      - ollama-data:/root/.ollama
+      # Use bind mount to expose models on host (easier to manage large models)
+      - "${OLLAMA_DATA_DIR:-./data/ollama}:/root/.ollama"
     networks:
       - grokforge-network
     restart: unless-stopped
@@ -122,18 +123,17 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-    # Uncomment to pull model on startup
-    # command: >
-    #   sh -c "ollama serve & 
-    #   sleep 10 && 
-    #   ollama pull qwen3:latest && 
-    #   wait"
+    # Auto-pull qwen3 model on first startup (comment out if you want to pull manually)
+    command: >
+      sh -c "ollama serve & 
+      sleep 10 && 
+      ollama pull qwen3:latest || true && 
+      wait"
 
 volumes:
   redis-data:
     driver: local
-  ollama-data:
-    driver: local
+  # ollama-data volume removed - using bind mount instead (./data/ollama)
   app-data:
     driver: local
 
