@@ -5,6 +5,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslations, type Language } from "@/lib/i18n";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,6 +36,7 @@ import {
   Code,
   MessageSquare,
   Sparkles,
+  Languages,
 } from "lucide-react";
 import "../index.css";
 
@@ -85,6 +87,18 @@ const QUEUE_API_URL =
   "http://localhost:3001";
 
 export function Demo6() {
+  const [language, setLanguage] = useState<Language>(() => {
+    const saved = localStorage.getItem("demo6-language");
+    return (saved === "en" ? "en" : "zh") as Language;
+  });
+  const { t, format } = useTranslations(language);
+
+  const toggleLanguage = useCallback(() => {
+    const newLang = language === "zh" ? "en" : "zh";
+    setLanguage(newLang);
+    localStorage.setItem("demo6-language", newLang);
+  }, [language]);
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -214,24 +228,37 @@ export function Demo6() {
           setQueueServerConnected(true);
           consecutiveFailuresRef.current = 0; // Reset failure counter on success
           
-          // Update queue positions for waiting messages
-          if (stats.waiting > 0) {
-            setMessages((prev) =>
-              prev.map((msg) => {
-                if (msg.status === "waiting" && msg.jobId) {
-                  // Calculate approximate position (this is an estimate)
-                  const waitingCount = prev.filter(
-                    (m) => m.status === "waiting" && m.jobId
-                  ).length;
-                  return {
-                    ...msg,
-                    queuePosition: waitingCount,
-                  };
-                }
-                return msg;
-              })
-            );
+        // Update queue positions for waiting messages
+        setMessages((prev) => {
+          const waitingMessages = prev.filter(
+            (m) => m.status === "waiting" && m.jobId
+          );
+          
+          if (waitingMessages.length > 0) {
+            // Calculate queue position based on actual queue stats
+            return prev.map((msg) => {
+              if (msg.status === "waiting" && msg.jobId) {
+                // Find position in waiting list (by timestamp)
+                const waitingList = waitingMessages
+                  .sort((a, b) => a.timestamp - b.timestamp)
+                  .map((m, idx) => ({ ...m, index: idx }));
+                
+                const msgInList = waitingList.find((m) => m.id === msg.id);
+                const positionInWaiting = msgInList ? msgInList.index + 1 : waitingList.length;
+                
+                // Total position = active jobs + position in waiting list
+                const totalPosition = (stats.active || 0) + positionInWaiting;
+                
+                return {
+                  ...msg,
+                  queuePosition: totalPosition,
+                };
+              }
+              return msg;
+            });
           }
+          return prev;
+        });
         } catch (jsonError) {
           // JSON parse error - ignore silently
           consecutiveFailuresRef.current++;
@@ -361,21 +388,44 @@ export function Demo6() {
             return next;
           });
 
-          // Update message status
-          setMessages((prev) =>
-            prev.map((msg) =>
-              msg.jobId === jobId
-                ? {
-                    ...msg,
-                    status: status.state,
-                    progress: status.progress,
-                    ...(status.state === "completed" && status.result
-                      ? { content: status.result.response }
-                      : {}),
-                  }
-                : msg
-            )
-          );
+          // Update message status and queue position
+          setMessages((prev) => {
+            // Calculate queue position for all waiting messages
+            const allWaiting = prev.filter(
+              (m) => m.status === "waiting" && m.jobId
+            );
+            const waitingList = allWaiting.sort((a, b) => a.timestamp - b.timestamp);
+            
+            return prev.map((msg) => {
+              if (msg.jobId === jobId) {
+                // Calculate queue position for waiting messages
+                let queuePosition: number | undefined = undefined;
+                if (status.state === "waiting") {
+                  const positionInWaiting = waitingList.findIndex((m) => m.jobId === jobId) + 1;
+                  queuePosition = (queueStats?.active || 0) + positionInWaiting;
+                }
+                
+                return {
+                  ...msg,
+                  status: status.state,
+                  progress: status.progress,
+                  queuePosition,
+                  ...(status.state === "completed" && status.result
+                    ? { content: status.result.response }
+                    : {}),
+                };
+              } else if (msg.status === "waiting" && msg.jobId) {
+                // Update queue position for other waiting messages
+                const positionInWaiting = waitingList.findIndex((m) => m.id === msg.id) + 1;
+                const queuePosition = (queueStats?.active || 0) + positionInWaiting;
+                return {
+                  ...msg,
+                  queuePosition,
+                };
+              }
+              return msg;
+            });
+          });
 
           // Add to history when completed or failed
           if (status.state === "completed" || status.state === "failed") {
@@ -551,13 +601,21 @@ export function Demo6() {
           },
           body: JSON.stringify({
             userId: "demo-user",
-            prompt: `请生成一个有趣、有深度的问题，涵盖以下主题之一：技术开发、商业策略、创意设计、科学探索、哲学思考、生活建议。问题应该：
+            prompt: language === "zh" 
+              ? `请生成一个有趣、有深度的问题，涵盖以下主题之一：技术开发、商业策略、创意设计、科学探索、哲学思考、生活建议。问题应该：
 1. 简洁明了（不超过30字）
 2. 引人思考
 3. 适合与AI助手讨论
 4. 不要包含引号或特殊格式
 
-只输出问题本身，不要任何解释或前缀。`,
+只输出问题本身，不要任何解释或前缀。`
+              : `Generate an interesting and thought-provoking question covering one of these topics: technology development, business strategy, creative design, scientific exploration, philosophical thinking, life advice. The question should:
+1. Be concise (no more than 30 words)
+2. Be thought-provoking
+3. Be suitable for discussion with an AI assistant
+4. Not include quotes or special formatting
+
+Output only the question itself, no explanations or prefixes.`,
             conversationHistory: [],
             priority: selectedPriority,
           }),
@@ -578,17 +636,23 @@ export function Demo6() {
         // Network error - queue server might not be running
         setMessages((prev) => prev.filter((msg) => msg.id !== generatingMessageId));
         // Use fallback question
-        const fallbackQuestions = [
+        const fallbackQuestions = language === "zh" ? [
           "如何提高代码质量和可维护性？",
           "人工智能将如何改变我们的工作方式？",
           "什么是微服务架构的最佳实践？",
           "如何平衡工作与生活？",
           "区块链技术的实际应用场景有哪些？",
+        ] : [
+          "How to improve code quality and maintainability?",
+          "How will AI change our way of working?",
+          "What are the best practices for microservices architecture?",
+          "How to balance work and life?",
+          "What are the practical applications of blockchain technology?",
         ];
         const randomQuestion =
           fallbackQuestions[
             Math.floor(Math.random() * fallbackQuestions.length)
-          ] || "如何提高代码质量和可维护性？";
+          ] || (language === "zh" ? "如何提高代码质量和可维护性？" : "How to improve code quality and maintainability?");
         setInput(randomQuestion);
         return;
       }
@@ -597,17 +661,23 @@ export function Demo6() {
         // Remove generating message on error
         setMessages((prev) => prev.filter((msg) => msg.id !== generatingMessageId));
         // Use fallback question
-        const fallbackQuestions = [
+        const fallbackQuestions = language === "zh" ? [
           "如何提高代码质量和可维护性？",
           "人工智能将如何改变我们的工作方式？",
           "什么是微服务架构的最佳实践？",
           "如何平衡工作与生活？",
           "区块链技术的实际应用场景有哪些？",
+        ] : [
+          "How to improve code quality and maintainability?",
+          "How will AI change our way of working?",
+          "What are the best practices for microservices architecture?",
+          "How to balance work and life?",
+          "What are the practical applications of blockchain technology?",
         ];
         const randomQuestion =
           fallbackQuestions[
             Math.floor(Math.random() * fallbackQuestions.length)
-          ] || "如何提高代码质量和可维护性？";
+          ] || (language === "zh" ? "如何提高代码质量和可维护性？" : "How to improve code quality and maintainability?");
         setInput(randomQuestion);
         return;
       }
@@ -662,7 +732,7 @@ export function Demo6() {
 
                     // If question is too long or empty, use fallback
                     if (!cleanQuestion || cleanQuestion.length > 100) {
-                      const fallbackQuestions = [
+                      const fallbackQuestions = language === "zh" ? [
                         "如何提高代码质量和可维护性？",
                         "人工智能将如何改变我们的工作方式？",
                         "什么是微服务架构的最佳实践？",
@@ -671,11 +741,20 @@ export function Demo6() {
                         "如何培养创新思维？",
                         "云原生架构的核心优势是什么？",
                         "如何建立高效的团队协作机制？",
+                      ] : [
+                        "How to improve code quality and maintainability?",
+                        "How will AI change our way of working?",
+                        "What are the best practices for microservices architecture?",
+                        "How to balance work and life?",
+                        "What are the practical applications of blockchain technology?",
+                        "How to cultivate innovative thinking?",
+                        "What are the core advantages of cloud-native architecture?",
+                        "How to establish efficient team collaboration mechanisms?",
                       ];
                       cleanQuestion =
                         fallbackQuestions[
                           Math.floor(Math.random() * fallbackQuestions.length)
-                        ] || "如何提高代码质量和可维护性？";
+                        ] || (language === "zh" ? "如何提高代码质量和可维护性？" : "How to improve code quality and maintainability?");
                     }
 
                     // Use setTimeout to avoid state update during render
@@ -686,11 +765,24 @@ export function Demo6() {
                     // Remove generating message
                     return null;
                   }
+                  // Calculate queue position for waiting messages
+                  let queuePosition: number | undefined = undefined;
+                  if (status.state === "waiting") {
+                    // Get all waiting messages including this one
+                    const allWaiting = prev.filter(
+                      (m) => m.status === "waiting" && m.jobId
+                    );
+                    const waitingList = allWaiting
+                      .sort((a, b) => a.timestamp - b.timestamp);
+                    const positionInWaiting = waitingList.findIndex((m) => m.jobId === jobId) + 1;
+                    queuePosition = (queueStats?.active || 0) + positionInWaiting;
+                  }
+                  
                   return {
                     ...msg,
                     status: status.state,
                     progress: status.progress,
-                    queuePosition: status.state === "waiting" ? (queueStats?.waiting || 0) : undefined,
+                    queuePosition,
                   };
                 }
                 return msg;
@@ -759,28 +851,28 @@ export function Demo6() {
         return (
           <Badge variant="secondary" className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
-            队列中
+            {t.statusWaiting}
           </Badge>
         );
       case "active":
         return (
           <Badge variant="default" className="flex items-center gap-1 bg-blue-500">
             <Activity className="w-3 h-3 animate-spin" />
-            生成中
+            {t.statusProcessing}
           </Badge>
         );
       case "completed":
         return (
           <Badge variant="default" className="flex items-center gap-1 bg-green-500">
             <CheckCircle2 className="w-3 h-3" />
-            完成
+            {t.statusCompleted}
           </Badge>
         );
       case "failed":
         return (
           <Badge variant="destructive" className="flex items-center gap-1">
             <XCircle className="w-3 h-3" />
-            失败
+            {t.statusFailed}
           </Badge>
         );
       default:
@@ -797,49 +889,60 @@ export function Demo6() {
             <div>
               <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
                 <Brain className="w-6 h-6 text-blue-500" />
-                Demo6: AI 对话队列系统
+                {t.title}
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                基于 Bun.js + BullMQ + Redis + Ollama 的企业级队列式 AI 对话平台
+                {t.subtitle}
               </p>
             </div>
 
             {/* Queue Stats */}
             <div className="flex items-center gap-4">
+              {/* Language Toggle */}
+              <Button
+                onClick={toggleLanguage}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Languages className="w-4 h-4" />
+                {language === "zh" ? "EN" : "中文"}
+              </Button>
+
               {/* Connection Status */}
               {queueServerConnected === false && (
                 <Badge variant="destructive" className="text-xs">
                   <AlertCircle className="w-3 h-3 mr-1" />
-                  队列服务器未连接
+                  {t.queueServerDisconnected}
                 </Badge>
               )}
               {queueServerConnected === true && (
                 <Badge variant="default" className="text-xs bg-green-500">
                   <CheckCircle2 className="w-3 h-3 mr-1" />
-                  已连接
+                  {t.connected}
                 </Badge>
               )}
               
               {queueStats && (
                 <div className="text-right">
-                  <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">实时队列统计</div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">{t.queueStats}</div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">
                       <Clock className="w-3 h-3 mr-1" />
-                      等待: {queueStats.waiting}
+                      {t.waiting}: {queueStats.waiting}
                     </Badge>
                     <Badge variant="default" className="text-xs bg-blue-500">
                       <Activity className="w-3 h-3 mr-1" />
-                      处理: {queueStats.active}
+                      {t.processing}: {queueStats.active}
                     </Badge>
                     <Badge variant="default" className="text-xs bg-green-500">
                       <CheckCircle2 className="w-3 h-3 mr-1" />
-                      完成: {queueStats.completed}
+                      {t.completed}: {queueStats.completed}
                     </Badge>
                     {queueStats.failed > 0 && (
                       <Badge variant="destructive" className="text-xs">
                         <XCircle className="w-3 h-3 mr-1" />
-                        失败: {queueStats.failed}
+                        {t.failed}: {queueStats.failed}
                       </Badge>
                     )}
                   </div>
@@ -856,8 +959,8 @@ export function Demo6() {
         <div className="w-80 flex-shrink-0 overflow-y-auto">
           <Tabs defaultValue="tech" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="tech">技术栈</TabsTrigger>
-              <TabsTrigger value="features">功能</TabsTrigger>
+              <TabsTrigger value="tech">{t.techStack}</TabsTrigger>
+              <TabsTrigger value="features">{t.features}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="tech" className="space-y-3 mt-4">
@@ -865,38 +968,38 @@ export function Demo6() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Code className="w-4 h-4" />
-                    技术构成
+                    {t.technology}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
                   <div>
-                    <div className="font-semibold text-slate-700 dark:text-slate-300 mb-1">Bun.js</div>
+                    <div className="font-semibold text-slate-700 dark:text-slate-300 mb-1">{t.bunjs}</div>
                     <div className="text-slate-600 dark:text-slate-400">
-                      高性能 JavaScript 运行时，原生支持 TypeScript、WebSocket、SSE，启动速度比 Node.js 快 4x
+                      {t.bunjsDesc}
                     </div>
                   </div>
                   <div>
-                    <div className="font-semibold text-slate-700 dark:text-slate-300 mb-1">BullMQ</div>
+                    <div className="font-semibold text-slate-700 dark:text-slate-300 mb-1">{t.bullmq}</div>
                     <div className="text-slate-600 dark:text-slate-400">
-                      基于 Redis 的现代队列系统，支持优先级、延迟、重试、速率限制
+                      {t.bullmqDesc}
                     </div>
                   </div>
                   <div>
-                    <div className="font-semibold text-slate-700 dark:text-slate-300 mb-1">Redis</div>
+                    <div className="font-semibold text-slate-700 dark:text-slate-300 mb-1">{t.redis}</div>
                     <div className="text-slate-600 dark:text-slate-400">
-                      内存数据库，作为队列后端，提供持久化和高可用性
+                      {t.redisDesc}
                     </div>
                   </div>
                   <div>
-                    <div className="font-semibold text-slate-700 dark:text-slate-300 mb-1">Ollama</div>
+                    <div className="font-semibold text-slate-700 dark:text-slate-300 mb-1">{t.ollama}</div>
                     <div className="text-slate-600 dark:text-slate-400">
-                      本地大语言模型服务，使用 qwen3:latest 模型，支持流式生成
+                      {t.ollamaDesc}
                     </div>
                   </div>
                   <div>
-                    <div className="font-semibold text-slate-700 dark:text-slate-300 mb-1">SSE</div>
+                    <div className="font-semibold text-slate-700 dark:text-slate-300 mb-1">{t.sse}</div>
                     <div className="text-slate-600 dark:text-slate-400">
-                      Server-Sent Events 实现实时状态推送，无需 WebSocket，自动重连
+                      {t.sseDesc}
                     </div>
                   </div>
                 </CardContent>
@@ -906,34 +1009,34 @@ export function Demo6() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Layers className="w-4 h-4" />
-                    架构设计
+                    {t.architecture}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-xs space-y-2">
                   <div className="flex items-start gap-2">
                     <Server className="w-4 h-4 text-blue-500 mt-0.5" />
                     <div>
-                      <div className="font-semibold">队列服务 (Port 3001)</div>
+                      <div className="font-semibold">{t.queueService}</div>
                       <div className="text-slate-600 dark:text-slate-400">
-                        独立的 Bun 服务器，处理任务入队、状态查询、SSE 推送
+                        {t.queueServiceDesc}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Database className="w-4 h-4 text-green-500 mt-0.5" />
                     <div>
-                      <div className="font-semibold">Redis (Port 6379)</div>
+                      <div className="font-semibold">{t.redisService}</div>
                       <div className="text-slate-600 dark:text-slate-400">
-                        存储队列数据、任务状态、支持持久化
+                        {t.redisServiceDesc}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <Brain className="w-4 h-4 text-purple-500 mt-0.5" />
                     <div>
-                      <div className="font-semibold">Ollama (Port 11434)</div>
+                      <div className="font-semibold">{t.ollamaService}</div>
                       <div className="text-slate-600 dark:text-slate-400">
-                        本地 LLM 服务，Worker 进程异步调用生成响应
+                        {t.ollamaServiceDesc}
                       </div>
                     </div>
                   </div>
@@ -944,7 +1047,7 @@ export function Demo6() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Zap className="w-4 h-4" />
-                    核心功能
+                    {t.coreFeatures}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-xs space-y-2">
@@ -974,15 +1077,15 @@ export function Demo6() {
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-3 h-3 text-green-500" />
-                    <span>流式响应（SSE 实时推送）</span>
+                    <span>{t.streamingResponse}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-3 h-3 text-green-500" />
-                    <span>任务历史记录（最近 50 条）</span>
+                    <span>{t.historyRecords}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-3 h-3 text-green-500" />
-                    <span>性能监控（响应时间、成功率）</span>
+                    <span>{t.performanceMonitoring}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -993,12 +1096,12 @@ export function Demo6() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <BarChart3 className="w-4 h-4" />
-                    性能指标
+                    {t.performanceMetrics}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 text-xs">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-600 dark:text-slate-400">平均响应时间</span>
+                    <span className="text-slate-600 dark:text-slate-400">{t.avgResponseTime}</span>
                     <Badge variant="outline">
                       {performanceMetrics.avgResponseTime > 0
                         ? `${(performanceMetrics.avgResponseTime / 1000).toFixed(1)}s`
@@ -1006,11 +1109,11 @@ export function Demo6() {
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-600 dark:text-slate-400">总请求数</span>
+                    <span className="text-slate-600 dark:text-slate-400">{t.totalRequests}</span>
                     <Badge variant="outline">{performanceMetrics.totalRequests}</Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-600 dark:text-slate-400">成功率</span>
+                    <span className="text-slate-600 dark:text-slate-400">{t.successRate}</span>
                     <Badge
                       variant={performanceMetrics.successRate >= 95 ? "default" : "destructive"}
                       className={performanceMetrics.successRate >= 95 ? "bg-green-500" : ""}
@@ -1019,7 +1122,7 @@ export function Demo6() {
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-600 dark:text-slate-400">吞吐量</span>
+                    <span className="text-slate-600 dark:text-slate-400">{t.throughput}</span>
                     <Badge variant="outline">
                       {performanceMetrics.throughput > 0
                         ? `${performanceMetrics.throughput}/min`
@@ -1033,7 +1136,7 @@ export function Demo6() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <HistoryIcon className="w-4 h-4" />
-                    任务历史
+                    {t.taskHistory}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -1070,16 +1173,16 @@ export function Demo6() {
                           }
                         >
                           {job.state === "completed"
-                            ? "完成"
+                            ? t.statusCompleted
                             : job.state === "failed"
-                            ? "失败"
-                            : "处理中"}
+                            ? t.statusFailed
+                            : t.statusProcessing}
                         </Badge>
                       </div>
                     ))}
                     {jobHistory.length === 0 && (
                       <div className="text-xs text-slate-400 text-center py-4">
-                        暂无历史记录
+                        {t.noHistory}
                       </div>
                     )}
                   </div>
@@ -1090,22 +1193,22 @@ export function Demo6() {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm flex items-center gap-2">
                     <Settings className="w-4 h-4" />
-                    队列设置
+                    {t.queueSettings}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-xs">
                   <div>
                     <label className="block text-slate-600 dark:text-slate-400 mb-1">
-                      任务优先级
+                      {t.taskPriority}
                     </label>
                     <select
                       value={selectedPriority}
                       onChange={(e) => setSelectedPriority(Number(e.target.value))}
                       className="w-full px-2 py-1 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded text-xs"
                     >
-                      <option value={1}>低 (1)</option>
-                      <option value={5}>中 (5)</option>
-                      <option value={10}>高 (10)</option>
+                      <option value={1}>{t.priorityLow}</option>
+                      <option value={5}>{t.priorityMedium}</option>
+                      <option value={10}>{t.priorityHigh}</option>
                     </select>
                   </div>
                   <div className="flex items-center justify-between">
@@ -1113,11 +1216,11 @@ export function Demo6() {
                     <Badge variant="outline">3</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-600 dark:text-slate-400">最大重试次数</span>
+                    <span className="text-slate-600 dark:text-slate-400">{t.maxRetries}</span>
                     <Badge variant="outline">3</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-600 dark:text-slate-400">速率限制</span>
+                    <span className="text-slate-600 dark:text-slate-400">{t.rateLimit}</span>
                     <Badge variant="outline">10/min</Badge>
                   </div>
                 </CardContent>
@@ -1134,15 +1237,15 @@ export function Demo6() {
               <div className="flex items-center justify-center h-full text-slate-400">
                 <div className="text-center max-w-md">
                   <Brain className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <h3 className="text-lg font-semibold mb-2">开始 AI 对话</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t.startChat}</h3>
                   <p className="text-sm mb-4">
-                    输入你的问题，消息将进入队列系统，实时显示处理状态和进度
+                    {t.startChatDesc}
                   </p>
                   <div className="text-xs text-slate-500 space-y-1">
-                    <div>✨ 支持优先级队列管理</div>
-                    <div>⚡ 实时进度追踪</div>
-                    <div>🔄 自动重试机制</div>
-                    <div>📊 性能监控</div>
+                    <div>{t.feature1}</div>
+                    <div>{t.feature2}</div>
+                    <div>{t.feature3}</div>
+                    <div>{t.feature4}</div>
                   </div>
                 </div>
               </div>
@@ -1168,30 +1271,30 @@ export function Demo6() {
                         {message.role === "user" ? (
                           <>
                             <Users className="w-4 h-4" />
-                            你
+                            {t.you}
                           </>
                         ) : message.role === "generating" ? (
                           <>
                             <Sparkles className="w-4 h-4" />
-                            生成问题中
+                            {t.generatingQuestion}
                           </>
                         ) : (
                           <>
                             <Brain className="w-4 h-4" />
-                            AI 助手
+                            {t.aiAssistant}
                           </>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
                         {message.priority && message.priority > 5 && (
                           <Badge variant="outline" className="text-xs">
-                            高优先级
+                            {t.highPriority}
                           </Badge>
                         )}
                         {message.status && getStatusBadge(message.status)}
                         {message.queuePosition !== undefined && message.status === "waiting" && (
                           <Badge variant="secondary" className="text-xs">
-                            队列: 前{message.queuePosition}个
+                            {t.queuePosition}: {format("queuePositionText", { count: message.queuePosition })}
                           </Badge>
                         )}
                       </div>
@@ -1207,7 +1310,7 @@ export function Demo6() {
                           />
                         </div>
                         <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                          处理中: {Math.round(message.progress)}%
+                          {format("processingPercent", { percent: Math.round(message.progress) })}
                         </div>
                       </div>
                     )}
@@ -1218,22 +1321,22 @@ export function Demo6() {
                         <span className="text-slate-400 italic">
                           {message.role === "generating"
                             ? message.status === "waiting"
-                              ? message.queuePosition !== undefined
-                                ? `⏳ 队列中，前面还有 ${message.queuePosition} 个任务...`
-                                : "⏳ 等待队列处理..."
+                              ? message.queuePosition !== undefined && message.queuePosition > 0
+                                ? format("waitingInQueue", { count: message.queuePosition })
+                                : t.waitingMessage
                               : message.status === "active"
-                              ? "⚙️ 正在生成问题..."
+                              ? t.generatingQuestionActive
                               : message.status === "failed"
-                              ? "❌ 生成失败"
-                              : "⏳ 等待中..."
+                              ? t.generationFailed
+                              : t.waitingMessage
                             : message.status === "waiting"
-                            ? message.queuePosition !== undefined
-                              ? `⏳ 队列中，前面还有 ${message.queuePosition} 个任务...`
-                              : "⏳ 等待队列处理..."
+                            ? message.queuePosition !== undefined && message.queuePosition > 0
+                              ? format("waitingInQueue", { count: message.queuePosition })
+                              : t.waitingMessage
                             : message.status === "active"
-                            ? "⚙️ 正在生成响应..."
+                            ? t.generatingResponse
                             : message.status === "failed"
-                            ? "❌ 生成失败"
+                            ? t.generationFailed
                             : ""}
                         </span>
                       )}
@@ -1248,7 +1351,7 @@ export function Demo6() {
                     {message.status === "failed" && !message.content && (
                       <div className="mt-2 text-sm text-red-500 flex items-center gap-1">
                         <AlertCircle className="w-4 h-4" />
-                        生成失败，请重试
+                        {t.generationFailed}
                       </div>
                     )}
                   </div>
@@ -1270,7 +1373,7 @@ export function Demo6() {
                 size="sm"
               >
                 <Sparkles className="w-4 h-4" />
-                AI 生成问题
+                {t.aiGenerateQuestion}
               </Button>
             </div>
 
@@ -1279,7 +1382,7 @@ export function Demo6() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="输入你的问题... (按 Enter 发送，Shift+Enter 换行)"
+                placeholder={t.inputPlaceholder}
                 rows={3}
                 className="flex-1 resize-none"
                 disabled={isLoading}
@@ -1295,7 +1398,7 @@ export function Demo6() {
                   ) : (
                     <>
                       <Send className="w-5 h-5 mr-2" />
-                      发送
+                      {t.send}
                     </>
                   )}
                 </Button>
@@ -1306,13 +1409,13 @@ export function Demo6() {
                   className="text-xs"
                 >
                   <RefreshCw className="w-3 h-3 mr-1" />
-                  刷新
+                  {t.refresh}
                 </Button>
               </div>
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400 mt-2 flex items-center justify-between">
-              <span>消息将进入队列，支持并发处理，实时显示进度</span>
-              <span>优先级: {selectedPriority === 1 ? "低" : selectedPriority === 5 ? "中" : "高"}</span>
+              <span>{t.messageQueueInfo}</span>
+              <span>{t.priority}: {selectedPriority === 1 ? (language === "zh" ? "低" : "Low") : selectedPriority === 5 ? (language === "zh" ? "中" : "Medium") : (language === "zh" ? "高" : "High")}</span>
             </div>
           </div>
         </div>
