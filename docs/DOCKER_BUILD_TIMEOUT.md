@@ -140,12 +140,21 @@ docker build -f Dockerfile.queue -t test-queue .
 2. 减少并发构建数量
 3. 使用 `--memory` 限制单个构建的内存使用
 
-### 问题 4: CPU 过载导致进程被 kill
+### 问题 4: CPU/内存过载导致进程被 kill
 
-**症状**：构建在 `bun install` 步骤失败，错误码 255，系统日志显示进程被 kill
+**症状**：构建在 `bun install` 步骤失败，错误码 255，系统日志显示进程被 kill。htop 显示 CPU 100%，内存使用率 >90%
 
 **解决方案**：
-1. **使用 CPU 限制构建**（推荐）：
+1. **使用串行构建**（最推荐，特别是内存 <1GB 的系统）：
+   ```bash
+   # 一次只构建一个服务，避免并行构建导致资源竞争
+   make build-serial
+   
+   # 或使用最安全的构建方式
+   make build-safe
+   ```
+
+2. **使用 CPU 限制构建**：
    ```bash
    # 使用 Makefile 提供的低 CPU 优先级构建
    make build-low-cpu
@@ -181,11 +190,20 @@ docker build -f Dockerfile.queue -t test-queue .
 ## 推荐的构建命令
 
 ```bash
+# ⚠️ 对于低内存系统（<1GB RAM），强烈推荐使用串行构建
+make build-safe
+
 # 标准构建（Dockerfile 内部已使用 nice 限制 CPU）
 make build
 
 # 低 CPU 优先级构建（如果标准构建仍然失败）
 make build-low-cpu
+
+# 串行构建（一次只构建一个服务，防止内存/CPU 过载）
+make build-serial
+
+# 最安全的构建方式（CPU 限制 + 串行构建）
+make build-safe
 
 # 带系统超时的构建（2小时）
 make build-timeout
@@ -196,8 +214,9 @@ make rebuild
 # 单独构建某个服务（带 CPU 限制）
 nice -n 19 docker build -f Dockerfile.queue -t queue-server .
 
-# 监控构建过程的 CPU 使用
-watch -n 1 'top -b -n 1 | head -20'
+# 监控构建过程的 CPU 和内存使用
+watch -n 1 'free -h && echo "" && top -b -n 1 | head -20'
+htop  # 更详细的监控
 ```
 
 ## 监控构建过程

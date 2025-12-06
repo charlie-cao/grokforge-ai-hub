@@ -15,10 +15,15 @@ COPY --chown=bunjs:nodejs package.json bun.lock ./
 RUN apk add --no-cache util-linux
 # Install with CPU throttling and better error handling
 RUN echo "Starting bun install with CPU throttling..." && \
+    echo "=== System Resources ===" && \
     echo "Disk space:" && df -h / && \
     echo "CPU cores:" && nproc && \
+    echo "Memory:" && (free -h || cat /proc/meminfo | head -3) && \
+    echo "Current memory usage:" && (ps aux --sort=-%mem | head -5 || true) && \
     # Use nice to lower priority (19 = lowest, prevents CPU spike)
     # Limit to 50% CPU usage by running with lower priority
+    # Set memory limit via ulimit if possible
+    (ulimit -v 400000 2>/dev/null || true) && \
     nice -n 19 bun install --frozen-lockfile 2>&1 | tee /tmp/install.log || \
     (echo "=== First install attempt failed ===" && \
      echo "Last 50 lines of install log:" && \

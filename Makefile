@@ -81,6 +81,28 @@ build-low-cpu: ## Build with CPU throttling (prevents CPU spike/kill)
 	@nice -n 19 docker compose -f $(COMPOSE_FILE) build
 	@echo "$(GREEN)✅ Build complete!$(NC)"
 
+build-serial: ## Build images one at a time (prevents memory/CPU overload)
+	@echo "$(GREEN)🔨 Building Docker images serially (one at a time)...$(NC)"
+	@echo "$(YELLOW)⚠️  This prevents memory/CPU overload on low-resource systems$(NC)"
+	@echo "$(YELLOW)📊 Current system resources:$(NC)"
+	@free -h || echo "free command not available"
+	@echo ""
+	@nice -n 19 docker compose -f $(COMPOSE_FILE) build queue-server || \
+		(echo "$(RED)❌ queue-server build failed!$(NC)" && exit 1)
+	@nice -n 19 docker compose -f $(COMPOSE_FILE) build scheduler-server || \
+		(echo "$(RED)❌ scheduler-server build failed!$(NC)" && exit 1)
+	@nice -n 19 docker compose -f $(COMPOSE_FILE) build app || \
+		(echo "$(RED)❌ app build failed!$(NC)" && exit 1)
+	@echo "$(GREEN)✅ All images built successfully!$(NC)"
+
+build-safe: ## Build with maximum resource protection (CPU + serial)
+	@echo "$(GREEN)🔨 Building with maximum resource protection...$(NC)"
+	@echo "$(YELLOW)⚠️  Using: CPU throttling + Serial build + Low priority$(NC)"
+	@echo "$(YELLOW)📊 System resources before build:$(NC)"
+	@free -h || echo "free command not available"
+	@echo ""
+	@make build-serial
+
 build-timeout: ## Build all Docker images with timeout (2 hours)
 	@echo "$(GREEN)🔨 Building Docker images with 2-hour timeout...$(NC)"
 	@timeout 7200 docker compose -f $(COMPOSE_FILE) build || \
