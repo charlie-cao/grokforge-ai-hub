@@ -22,12 +22,12 @@ RUN echo "Starting bun install with CPU throttling..." && \
     echo "Disk space:" && df -h / && \
     echo "CPU cores:" && nproc && \
     echo "Memory:" && (free -h || cat /proc/meminfo | head -3) && \
-    echo "Current memory usage:" && (ps aux --sort=-%mem | head -5 || true) && \
+    echo "Current memory usage:" && (ps -o pid,user,rss,comm 2>/dev/null | head -10 || cat /proc/meminfo | head -3) && \
     # Use nice to lower priority (19 = lowest, prevents CPU spike)
-    # Limit to 50% CPU usage by running with lower priority
-    # Set memory limit via ulimit if possible
-    (ulimit -v 400000 2>/dev/null || true) && \
-    nice -n 19 bun install --frozen-lockfile 2>&1 | tee /tmp/install.log || \
+    # Set memory limit via ulimit (300MB = 300000KB, more conservative)
+    (ulimit -v 300000 2>/dev/null || true) && \
+    # Set max old space size for bun (if supported)
+    NODE_OPTIONS="--max-old-space-size=300" nice -n 19 bun install --frozen-lockfile 2>&1 | tee /tmp/install.log || \
     (echo "=== First install attempt failed ===" && \
      echo "Last 50 lines of install log:" && \
      tail -50 /tmp/install.log && \

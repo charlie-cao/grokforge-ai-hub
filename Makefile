@@ -87,11 +87,23 @@ build-serial: ## Build images one at a time (prevents memory/CPU overload)
 	@echo "$(YELLOW)📊 Current system resources:$(NC)"
 	@free -h || echo "free command not available"
 	@echo ""
-	@nice -n 19 docker compose -f $(COMPOSE_FILE) build queue-server || \
+	@echo "$(YELLOW)🧹 Stopping any running builds to free resources...$(NC)"
+	@docker compose -f $(COMPOSE_FILE) down 2>/dev/null || true
+	@echo "$(YELLOW)⏳ Waiting 5 seconds for resources to free up...$(NC)"
+	@sleep 5
+	@echo ""
+	@echo "$(GREEN)📦 Building queue-server...$(NC)"
+	@nice -n 19 docker compose -f $(COMPOSE_FILE) build --no-parallel queue-server || \
 		(echo "$(RED)❌ queue-server build failed!$(NC)" && exit 1)
-	@nice -n 19 docker compose -f $(COMPOSE_FILE) build scheduler-server || \
+	@echo "$(YELLOW)⏳ Waiting 3 seconds before next build...$(NC)"
+	@sleep 3
+	@echo "$(GREEN)📦 Building scheduler-server...$(NC)"
+	@nice -n 19 docker compose -f $(COMPOSE_FILE) build --no-parallel scheduler-server || \
 		(echo "$(RED)❌ scheduler-server build failed!$(NC)" && exit 1)
-	@nice -n 19 docker compose -f $(COMPOSE_FILE) build app || \
+	@echo "$(YELLOW)⏳ Waiting 3 seconds before next build...$(NC)"
+	@sleep 3
+	@echo "$(GREEN)📦 Building app...$(NC)"
+	@nice -n 19 docker compose -f $(COMPOSE_FILE) build --no-parallel app || \
 		(echo "$(RED)❌ app build failed!$(NC)" && exit 1)
 	@echo "$(GREEN)✅ All images built successfully!$(NC)"
 
