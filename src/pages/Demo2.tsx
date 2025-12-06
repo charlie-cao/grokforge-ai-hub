@@ -30,7 +30,9 @@ import {
   Copy,
   CheckCircle2,
   Loader2,
+  Home,
 } from "lucide-react";
+import { BackToHome } from "../components/BackToHome";
 import "../index.css";
 
 // API 基础 URL
@@ -242,10 +244,13 @@ export function Demo2() {
               <h1 className="text-2xl font-bold">{t.title}</h1>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{t.subtitle}</p>
             </div>
-            <Button variant="outline" onClick={toggleLanguage}>
-              <Globe className="w-4 h-4 mr-2" />
-              {language === "zh" ? "English" : "中文"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <BackToHome />
+              <Button variant="outline" onClick={toggleLanguage}>
+                <Globe className="w-4 h-4 mr-2" />
+                {language === "zh" ? "English" : "中文"}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
