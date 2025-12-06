@@ -1,0 +1,147 @@
+version: '3.8'
+
+# Production Docker Compose configuration
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  # Main Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: grokforge-ai-hub-prod
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - OLLAMA_HOST=${OLLAMA_HOST:-ollama}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+      - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434/api/generate}
+      - QUEUE_API_URL=http://queue-server:3001
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+      queue-server:
+        condition: service_started
+    networks:
+      - grokforge-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
+
+  # Queue Server (Demo6)
+  queue-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.queue
+    container_name: grokforge-queue-server-prod
+    ports:
+      - "${QUEUE_PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - REDIS_HOST=${REDIS_HOST:-redis}
+      - REDIS_PORT=${REDIS_PORT:-6379}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - OLLAMA_HOST=${OLLAMA_HOST:-ollama}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+      - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434/api/generate}
+    depends_on:
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - grokforge-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: grokforge-redis-prod
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
+    networks:
+      - grokforge-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Ollama (Optional - can use external Ollama service)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: grokforge-ollama-prod
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - grokforge-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+
+volumes:
+  redis-data:
+    driver: local
+  ollama-data:
+    driver: local
+
+networks:
+  grokforge-network:
+    driver: bridge
+

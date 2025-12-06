@@ -12,7 +12,12 @@ import Redis from "ioredis";
 const redisConnection = new Redis({
   host: process.env.REDIS_HOST || "localhost",
   port: parseInt(process.env.REDIS_PORT || "6379"),
+  password: process.env.REDIS_PASSWORD || undefined,
   maxRetriesPerRequest: null,
+  retryStrategy: (times) => {
+    const delay = Math.min(times * 50, 2000);
+    return delay;
+  },
 });
 
 // Queue configuration
@@ -55,7 +60,9 @@ async function* streamOllamaResponse(
   model: string = "qwen3:latest",
   systemPrompt?: string
 ): AsyncGenerator<string, void, unknown> {
-  const apiUrl = process.env.OLLAMA_URL || "http://localhost:11434/api/generate";
+  const ollamaHost = process.env.OLLAMA_HOST || "localhost";
+  const ollamaPort = process.env.OLLAMA_PORT || "11434";
+  const apiUrl = process.env.OLLAMA_URL || `http://${ollamaHost}:${ollamaPort}/api/generate`;
   const fullPrompt = systemPrompt
     ? `${systemPrompt}\n\n${prompt.trim()}`
     : prompt.trim();

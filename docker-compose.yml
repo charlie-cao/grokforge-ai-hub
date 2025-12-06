@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  # Main Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: grokforge-ai-hub
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OLLAMA_HOST=${OLLAMA_HOST:-ollama}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+      - QUEUE_API_URL=http://queue-server:3001
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      redis:
+        condition: service_healthy
+      queue-server:
+        condition: service_started
+    networks:
+      - grokforge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Queue Server (Demo6)
+  queue-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.queue
+    container_name: grokforge-queue-server
+    ports:
+      - "${QUEUE_PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OLLAMA_HOST=${OLLAMA_HOST:-ollama}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+    depends_on:
+      redis:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
+    networks:
+      - grokforge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: grokforge-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    networks:
+      - grokforge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Ollama (Optional - can use external Ollama service)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: grokforge-ollama
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    networks:
+      - grokforge-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    # Uncomment to pull model on startup
+    # command: >
+    #   sh -c "ollama serve & 
+    #   sleep 10 && 
+    #   ollama pull qwen3:latest && 
+    #   wait"
+
+volumes:
+  redis-data:
+    driver: local
+  ollama-data:
+    driver: local
+
+networks:
+  grokforge-network:
+    driver: bridge
+

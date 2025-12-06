@@ -147,6 +147,41 @@ For detailed Demo6 setup, see [Demo6 Quick Start Guide](docs/DEMO6_QUICKSTART.md
 
 详细的 Demo6 设置，请参阅 [Demo6 快速开始指南](docs/DEMO6_QUICKSTART.md)。
 
+### 🐳 Docker Deployment / Docker 部署
+
+#### Quick Deploy / 快速部署
+
+```bash
+# Development environment
+docker-compose up -d
+
+# Production environment
+docker-compose -f docker-compose.prod.yml up -d
+
+# Or use deployment script
+./scripts/deploy.sh prod  # Linux/macOS
+.\scripts\deploy.ps1 prod  # Windows PowerShell
+```
+
+#### Configuration / 配置
+
+1. Copy environment file:
+```bash
+cp env.example .env
+```
+
+2. Edit `.env` with your settings:
+```env
+APP_PORT=3000
+REDIS_PASSWORD=your-secure-password
+OLLAMA_HOST=ollama
+CORS_ORIGIN=https://yourdomain.com
+```
+
+For detailed deployment guide, see:
+- **[Deployment Guide (English)](docs/DEPLOYMENT_EN.md)**
+- **[部署指南（中文）](docs/DEPLOYMENT_CN.md)**
+
 ---
 
 ## 🛠️ Tech Stack / 技术栈

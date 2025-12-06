@@ -1,0 +1,32 @@
+# Dockerfile for Queue Server (Demo6)
+FROM oven/bun:1.3.3-alpine
+
+WORKDIR /app
+
+# Install production dependencies
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
+
+# Copy queue server source
+COPY src/server ./src/server
+COPY src/lib ./src/lib
+COPY tsconfig.json ./
+COPY bunfig.toml ./
+
+# Install wget for healthcheck
+RUN apk add --no-cache wget
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S bunjs -u 1001 && \
+    chown -R bunjs:nodejs /app
+
+USER bunjs
+
+EXPOSE 3001
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:3001/health || exit 1
+
+CMD ["bun", "run", "src/server/demo6-server.ts"]
+

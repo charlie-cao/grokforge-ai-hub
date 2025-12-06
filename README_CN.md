@@ -147,6 +147,41 @@ bun dev
 
 For detailed Demo6 setup, see [Demo6 Quick Start Guide](docs/DEMO6_QUICKSTART.md).
 
+### 🐳 Docker 部署
+
+#### 快速部署
+
+```bash
+# 开发环境
+docker-compose up -d
+
+# 生产环境
+docker-compose -f docker-compose.prod.yml up -d
+
+# 或使用部署脚本
+./scripts/deploy.sh prod  # Linux/macOS
+.\scripts\deploy.ps1 prod  # Windows PowerShell
+```
+
+#### 配置
+
+1. 复制环境变量文件：
+```bash
+cp env.example .env
+```
+
+2. 编辑 `.env` 设置你的配置：
+```env
+APP_PORT=3000
+REDIS_PASSWORD=your-secure-password
+OLLAMA_HOST=ollama
+CORS_ORIGIN=https://yourdomain.com
+```
+
+详细的部署指南，请参阅：
+- **[部署指南（中文）](docs/DEPLOYMENT_CN.md)**
+- **[Deployment Guide (English)](docs/DEPLOYMENT_EN.md)**
+
 ---
 
 ## 🛠️ 技术栈

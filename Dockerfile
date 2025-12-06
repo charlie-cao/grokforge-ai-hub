@@ -1,0 +1,56 @@
+# Multi-stage build for GrokForge AI Hub
+# Stage 1: Build stage
+FROM oven/bun:1.3.3-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json bun.lock ./
+
+# Install dependencies
+RUN bun install --frozen-lockfile
+
+# Copy source code
+COPY . .
+
+# Build the application (if needed)
+# RUN bun run build
+
+# Stage 2: Production stage
+FROM oven/bun:1.3.3-alpine
+
+WORKDIR /app
+
+# Install production dependencies only
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
+
+# Copy built application from builder
+COPY --from=builder /app/src ./src
+COPY --from=builder /app/tsconfig.json ./
+COPY --from=builder /app/bunfig.toml ./
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S bunjs -u 1001
+
+# Change ownership
+RUN chown -R bunjs:nodejs /app
+
+USER bunjs
+
+# Expose ports
+# 3000: Main application
+# 3001: Demo6 queue server (if running separately)
+EXPOSE 3000
+
+# Install wget for healthcheck
+RUN apk add --no-cache wget
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:3000/ || exit 1
+
+# Start the application
+CMD ["bun", "run", "src/index.ts"]
+
