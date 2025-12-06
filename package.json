@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "bun --hot src/index.ts",
     "start": "NODE_ENV=production bun src/index.ts",
-    "build": "bun run build.ts"
+    "build": "bun run build.ts",
+    "demo6:server": "bun run src/server/demo6-server.ts",
+    "demo6:redis": "docker-compose -f docker-compose.demo6.yml up -d"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
@@ -20,9 +22,11 @@
     "@tiptap/starter-kit": "^3.13.0",
     "@types/react-grid-layout": "^1.3.6",
     "@xyflow/react": "^12.10.0",
+    "bullmq": "^5.65.1",
     "bun-plugin-tailwind": "^0.1.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "ioredis": "^5.8.2",
     "jotai": "^2.15.2",
     "lucide-react": "^0.545.0",
     "monaco-editor": "^0.55.1",

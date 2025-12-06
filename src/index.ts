@@ -5,6 +5,7 @@ import demo2 from "./demo2.html";
 import demo3 from "./demo3.html";
 import demo4 from "./demo4.html";
 import demo5 from "./demo5.html";
+import demo6 from "./demo6.html";
 
 const server = serve({
   routes: {
@@ -14,6 +15,7 @@ const server = serve({
     "/demo3": demo3,
     "/demo4": demo4,
     "/demo5": demo5,
+    "/demo6": demo6,
     // Serve index.html for all unmatched routes.
     "/*": index,
 
