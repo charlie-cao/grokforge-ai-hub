@@ -1,6 +1,6 @@
 # Dependencies
 node_modules
-bun.lock
+# Note: bun.lock should NOT be ignored - needed for reproducible builds
 
 # Build outputs
 dist

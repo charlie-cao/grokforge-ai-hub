@@ -1,0 +1,30 @@
+# Dockerfile for Scheduler Server (Demo7)
+FROM oven/bun:1.3.3-alpine
+
+WORKDIR /app
+
+# Install production dependencies
+COPY package.json bun.lock ./
+RUN bun install --frozen-lockfile --production
+
+# Copy scheduler server source and required libs
+COPY src/server/demo7-scheduler-server.ts ./src/server/demo7-scheduler-server.ts
+COPY src/lib ./src/lib
+COPY tsconfig.json ./
+COPY bunfig.toml ./
+
+# Create data directory for SQLite database
+RUN mkdir -p /app/data
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S bunjs -u 1001 && \
+    chown -R bunjs:nodejs /app
+
+USER bunjs
+
+# Note: Scheduler doesn't expose any ports, it's a background service
+
+# Start the scheduler
+CMD ["bun", "run", "src/server/demo7-scheduler-server.ts"]
+

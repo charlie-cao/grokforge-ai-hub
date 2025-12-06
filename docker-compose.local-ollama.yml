@@ -1,0 +1,46 @@
+# Docker Compose override for using local Ollama service
+# This file disables the Ollama container and configures services to use host Ollama
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.local-ollama.yml up -d
+
+services:
+  # Main Application - use local Ollama
+  app:
+    environment:
+      - OLLAMA_HOST=${OLLAMA_HOST:-host.docker.internal}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+    depends_on:
+      redis:
+        condition: service_healthy
+      queue-server:
+        condition: service_started
+
+  # Queue Server - use local Ollama  
+  queue-server:
+    environment:
+      - OLLAMA_HOST=${OLLAMA_HOST:-host.docker.internal}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # Scheduler Server - use local Ollama
+  scheduler-server:
+    environment:
+      - OLLAMA_HOST=${OLLAMA_HOST:-host.docker.internal}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+
+  # Minimal Ollama placeholder service - exists only to satisfy dependencies
+  # This service stays running but does nothing (using local Ollama instead)
+  ollama:
+    image: alpine:latest
+    command: ["sh", "-c", "echo 'Ollama placeholder - using local Ollama service on host.docker.internal:11434'; tail -f /dev/null"]
+    container_name: grokforge-ollama-placeholder
+    networks:
+      - grokforge-network
+    healthcheck:
+      test: ["CMD", "echo", "ok"]
+      interval: 30s
+      timeout: 1s
+      retries: 1
+      start_period: 0s
+    restart: "no"

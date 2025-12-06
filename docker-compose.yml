@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Main Application
   app:
@@ -19,11 +17,14 @@ services:
       - QUEUE_API_URL=http://queue-server:3001
     volumes:
       - ./logs:/app/logs
+      - app-data:/app/data
     depends_on:
       redis:
         condition: service_healthy
       queue-server:
         condition: service_started
+      ollama:
+        condition: service_healthy
     networks:
       - grokforge-network
     restart: unless-stopped
@@ -64,6 +65,25 @@ services:
       retries: 3
       start_period: 40s
 
+  # Scheduler Server (Demo7)
+  scheduler-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    container_name: grokforge-scheduler-server
+    environment:
+      - NODE_ENV=production
+      - OLLAMA_HOST=${OLLAMA_HOST:-ollama}
+      - OLLAMA_PORT=${OLLAMA_PORT:-11434}
+    volumes:
+      - app-data:/app/data
+    depends_on:
+      ollama:
+        condition: service_healthy
+    networks:
+      - grokforge-network
+    restart: unless-stopped
+
   # Redis
   redis:
     image: redis:7-alpine
@@ -72,12 +92,16 @@ services:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis-data:/data
-    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+    command: >
+      redis-server
+      --appendonly yes
+      ${REDIS_PASSWORD:+--requirepass $REDIS_PASSWORD}
     networks:
       - grokforge-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: >
+        sh -c "redis-cli ${REDIS_PASSWORD:+-a $REDIS_PASSWORD} ping"
       interval: 5s
       timeout: 3s
       retries: 5
@@ -110,6 +134,8 @@ volumes:
   redis-data:
     driver: local
   ollama-data:
+    driver: local
+  app-data:
     driver: local
 
 networks:

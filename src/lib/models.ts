@@ -200,11 +200,20 @@ export class ModelManager {
 }
 
 // Default model configuration
+// Supports environment variables for containerized deployments
+const getOllamaUrl = (): string => {
+  const host = process.env.OLLAMA_HOST || "localhost";
+  const port = process.env.OLLAMA_PORT || "11434";
+  const url = process.env.OLLAMA_URL;
+  if (url) return url;
+  return `http://${host}:${port}/api/generate`;
+};
+
 export const defaultModelConfig: ModelConfig = {
   name: "Qwen3",
   provider: "ollama",
-  apiUrl: "http://localhost:11434/api/generate",
-  model: "qwen3:latest",
+  apiUrl: getOllamaUrl(),
+  model: process.env.OLLAMA_MODEL || "qwen3:latest",
 };
 
 // System prompts

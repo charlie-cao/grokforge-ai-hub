@@ -30,6 +30,9 @@ COPY --from=builder /app/src ./src
 COPY --from=builder /app/tsconfig.json ./
 COPY --from=builder /app/bunfig.toml ./
 
+# Install wget for healthcheck (before switching to non-root user)
+RUN apk add --no-cache wget
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S bunjs -u 1001
@@ -43,9 +46,6 @@ USER bunjs
 # 3000: Main application
 # 3001: Demo6 queue server (if running separately)
 EXPOSE 3000
-
-# Install wget for healthcheck
-RUN apk add --no-cache wget
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

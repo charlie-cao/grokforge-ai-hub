@@ -92,6 +92,30 @@ This repository contains **7 comprehensive demos** showcasing different aspects 
 
 For detailed Demo6 setup, see [Demo6 Quick Start Guide](docs/DEMO6_QUICKSTART.md).
 
+### 🐳 Containerized Deployment / 容器化部署
+
+> 📖 **一键容器化启动**: 查看 [完整启动指南](docs/START_GUIDE.md) 或 [快速开始指南](QUICKSTART.md) 获取一键启动所有服务的详细说明（包括 Web 服务、队列服务、调度器服务）。
+> 
+> 📖 **One-Command Containerized Startup**: See [Complete Startup Guide](docs/START_GUIDE.md) or [Quick Start Guide](QUICKSTART.md) for detailed one-command startup instructions (including web service, queue service, and scheduler service).
+
+使用 Docker 一键启动所有服务（Web、队列、调度器、Redis、Ollama）：
+
+Use Docker to start all services with one command (Web, Queue, Scheduler, Redis, Ollama):
+
+```bash
+# 检查环境 / Check environment
+# Windows: .\scripts\check-env.ps1
+# Linux/macOS: ./scripts/check-env.sh
+
+# 启动所有服务 / Start all services
+# Linux/macOS: make run
+# Windows: .\scripts\docker-run.ps1 run
+
+# 使用本地 Ollama（不下载大模型）/ Use local Ollama (no model download)
+# Linux/macOS: make run-local  
+# Windows: .\scripts\docker-run.ps1 run-local
+```
+
 **Key Features / 核心特性:**
 - 🚀 **Queue Management / 队列管理** - Priority-based task queuing with BullMQ / 基于优先级的任务队列（BullMQ）
 - 📊 **Real-time Monitoring / 实时监控** - Live progress tracking via SSE / 通过 SSE 实时进度追踪
@@ -104,11 +128,23 @@ For detailed Demo6 setup, see [Demo6 Quick Start Guide](docs/DEMO6_QUICKSTART.md
 
 ## 🚀 Quick Start / 快速开始
 
+> 📖 **容器化部署快速开始**: 查看 [完整启动指南](docs/START_GUIDE.md) 或 [快速开始指南](QUICKSTART.md) 获取一键容器化启动说明（包括环境检查脚本）。
+> 
+> 📖 **Containerized Deployment Quick Start**: See [Complete Startup Guide](docs/START_GUIDE.md) or [Quick Start Guide](QUICKSTART.md) for one-command containerized startup instructions (including environment check scripts).
+
 ### Prerequisites / 前置要求
+
+#### For Development / 开发环境
 
 - [Bun](https://bun.sh) v1.3+ installed / 已安装
 - [Docker](https://www.docker.com) (for Demo6 Redis / 用于 Demo6 的 Redis)
 - [Ollama](https://ollama.ai) with `qwen3:latest` model / 已安装 `qwen3:latest` 模型
+
+#### For Containerized Deployment / 容器化部署
+
+- [Docker](https://www.docker.com) v20.10+ and [Docker Compose](https://docs.docker.com/compose/) v2.0+
+- Make (可选，推荐用于 Linux/macOS) / Optional but recommended for Linux/macOS
+- 本地 Ollama (可选，如果使用本地 Ollama 模式) / Local Ollama (optional, if using local Ollama mode)
 
 ### Installation / 安装
 
@@ -150,18 +186,38 @@ bun dev
 
 ### 🐳 Docker Deployment / Docker 部署
 
+> 📖 **完整启动指南**: 查看 [完整启动指南](docs/START_GUIDE.md) 获取详细的平台特定说明、环境检查脚本和故障排查。
+> 
+> 📖 **Complete Startup Guide**: See [Complete Startup Guide](docs/START_GUIDE.md) for detailed platform-specific instructions, environment check scripts, and troubleshooting.
+
 #### Quick Deploy / 快速部署
+
+**使用环境检查脚本（推荐）/ Using Environment Check Scripts (Recommended):**
+
+```bash
+# Windows
+.\scripts\check-env.ps1
+
+# Linux/macOS
+chmod +x scripts/check-env.sh
+./scripts/check-env.sh
+```
+
+**启动服务 / Start Services:**
 
 ```bash
 # Development environment / 开发环境
-docker-compose up -d
+make run              # Linux/macOS
+.\scripts\docker-run.ps1 run  # Windows PowerShell
+docker-compose up -d  # 通用方式
+
+# Using local Ollama (saves disk space) / 使用本地 Ollama (节省磁盘空间)
+make run-local              # Linux/macOS
+.\scripts\docker-run.ps1 run-local  # Windows PowerShell
+docker-compose -f docker-compose.yml -f docker-compose.local-ollama.yml up -d
 
 # Production environment / 生产环境
 docker-compose -f docker-compose.prod.yml up -d
-
-# Or use deployment script / 或使用部署脚本
-./scripts/deploy.sh prod  # Linux/macOS
-.\scripts\deploy.ps1 prod  # Windows PowerShell
 ```
 
 #### Configuration / 配置
