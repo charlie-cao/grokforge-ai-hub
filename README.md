@@ -63,9 +63,9 @@ Hi! I'm **Charlie Cao**, a developer passionate about exploring the intersection
 
 ## 🎯 Project Overview / 项目概览
 
-This repository contains **6 comprehensive demos** showcasing different aspects of AI-powered development:
+This repository contains **7 comprehensive demos** showcasing different aspects of AI-powered development:
 
-本仓库包含 **6 个综合演示**，展示 AI 驱动开发的不同方面：
+本仓库包含 **7 个综合演示**，展示 AI 驱动开发的不同方面：
 
 ### 📦 Demo Collection / 演示集合
 
@@ -77,6 +77,7 @@ This repository contains **6 comprehensive demos** showcasing different aspects 
 | **Demo 4** | Integrated tech stack showcase / 技术栈整合展示 | React Flow, Tiptap, Monaco, RGL, Zustand, Jotai, Zod | ✅ Complete / 完成 |
 | **Demo 5** | Multi-tab tech stack demo / 多标签技术栈演示 | All above + Shadcn UI | ✅ Complete / 完成 |
 | **Demo 6** | **Queue-based AI Chat System / 基于队列的 AI 对话系统** | Bun.js, BullMQ, Redis, Ollama, SSE | ⭐ **Featured / 特色** |
+| **Demo 7** | **Scheduled AI Chat Tasks / 定时 AI 对话任务** | Bun.js, Bun SQLite, Ollama, Drizzle ORM | ✅ Complete / 完成 |
 
 ### ⭐ Featured: Demo6 - Enterprise AI Chat Queue System / 特色：Demo6 - 企业级 AI 对话队列系统
 

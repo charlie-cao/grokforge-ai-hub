@@ -8,7 +8,8 @@
     "start": "NODE_ENV=production bun src/index.ts",
     "build": "bun run build.ts",
     "demo6:server": "bun run src/server/demo6-server.ts",
-    "demo6:redis": "docker-compose -f docker-compose.demo6.yml up -d"
+    "demo6:redis": "docker-compose -f docker-compose.demo6.yml up -d",
+    "demo7:scheduler": "bun run src/server/demo7-scheduler-server.ts"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",

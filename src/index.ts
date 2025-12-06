@@ -6,6 +6,7 @@ import demo3 from "./demo3.html";
 import demo4 from "./demo4.html";
 import demo5 from "./demo5.html";
 import demo6 from "./demo6.html";
+import demo7 from "./demo7.html";
 
 const server = serve({
   routes: {
@@ -16,6 +17,7 @@ const server = serve({
     "/demo4": demo4,
     "/demo5": demo5,
     "/demo6": demo6,
+    "/demo7": demo7,
     // Serve index.html for all unmatched routes.
     "/*": index,
 
@@ -64,6 +66,20 @@ const server = serve({
       DELETE: async (req) => {
         const { deleteUser } = await import("./server/demo2-api");
         return deleteUser(req.params.id);
+      },
+    },
+
+    // Demo7 API routes - Scheduled AI Chat Tasks
+    "/api/demo7/chats": {
+      GET: async (req) => {
+        const { getAllChats } = await import("./server/demo7-api");
+        return getAllChats(req);
+      },
+    },
+    "/api/demo7/chats/:id": {
+      GET: async (req) => {
+        const { getChatById } = await import("./server/demo7-api");
+        return getChatById(req, req.params.id);
       },
     },
   },

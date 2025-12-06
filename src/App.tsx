@@ -353,6 +353,15 @@ export function App() {
               Demo 6
             </Button>
             <Button
+              onClick={() => window.location.href = '/demo7'}
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              Demo 7
+            </Button>
+            <Button
               onClick={handleNewChat}
               variant="ghost"
               size="sm"
