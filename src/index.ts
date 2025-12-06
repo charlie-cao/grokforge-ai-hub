@@ -7,6 +7,7 @@ import demo4 from "./demo4.html";
 import demo5 from "./demo5.html";
 import demo6 from "./demo6.html";
 import demo7 from "./demo7.html";
+import demo8 from "./demo8.html";
 
 const server = serve({
   routes: {
@@ -18,6 +19,7 @@ const server = serve({
     "/demo5": demo5,
     "/demo6": demo6,
     "/demo7": demo7,
+    "/demo8": demo8,
     // Serve index.html for all unmatched routes.
     "/*": index,
 

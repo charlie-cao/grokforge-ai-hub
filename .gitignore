@@ -43,3 +43,5 @@ secrets.json
 # Demo2 database files
 data/demo2.db
 data/demo2.db-journal
+data/demo7.db
+data/demo7.db-journal
